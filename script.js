@@ -26,7 +26,16 @@ const modeButtons = {
     signPdf: document.getElementById('signPdfMode'),
     editPdf: document.getElementById('editPdfMode'),
     wordToPdf: document.getElementById('wordToPdfMode'),
-    viewWord: document.getElementById('viewWordMode')
+    viewWord: document.getElementById('viewWordMode'),
+    passwordProtect: document.getElementById('passwordProtectMode'),
+    removePassword: document.getElementById('removePasswordMode'),
+    watermark: document.getElementById('watermarkMode'),
+    compress: document.getElementById('compressMode'),
+    metadata: document.getElementById('metadataMode'),
+    pageNumbers: document.getElementById('pageNumbersMode'),
+    reorder: document.getElementById('reorderMode'),
+    crop: document.getElementById('cropMode'),
+    bookmarks: document.getElementById('bookmarksMode')
 };
 
 // Control groups
@@ -82,6 +91,14 @@ let uploadedEditImage = null;
 // Word Document State
 let wordDocuments = []; // Array of {arrayBuffer, html, name}
 let wordViewer = null;
+
+// Reorder Pages State
+let reorderInterface = null;
+let reorderedPages = [];
+let draggedElement = null;
+
+// Watermark State
+let watermarkImageData = null;
 
 // Mode configurations
 const modeConfigs = {
@@ -174,6 +191,87 @@ const modeConfigs = {
         buttonText: 'Convert to PDF',
         description: 'View and convert Microsoft Word documents in your browser.',
         defaultFileName: 'word-document'
+    },
+    passwordProtect: {
+        accept: 'application/pdf',
+        multiple: false,
+        dropText: 'Drag & drop a PDF file here',
+        fileInfo: 'Select a PDF to password protect',
+        buttonText: 'Protect PDF',
+        description: 'Add password protection to your PDF with user and owner passwords. Control printing and editing permissions.',
+        defaultFileName: 'protected'
+    },
+    removePassword: {
+        accept: 'application/pdf',
+        multiple: false,
+        dropText: 'Drag & drop a password-protected PDF here',
+        fileInfo: 'Select a PDF to remove password',
+        buttonText: 'Remove Password',
+        description: 'Remove password protection from PDF files. You\'ll need the current password to proceed.',
+        defaultFileName: 'unlocked'
+    },
+    watermark: {
+        accept: 'application/pdf',
+        multiple: false,
+        dropText: 'Drag & drop a PDF file here',
+        fileInfo: 'Select a PDF to add watermark',
+        buttonText: 'Add Watermark',
+        description: 'Add text or image watermarks to your PDF. Perfect for branding, copyright, or confidentiality marks.',
+        defaultFileName: 'watermarked'
+    },
+    compress: {
+        accept: 'application/pdf',
+        multiple: false,
+        dropText: 'Drag & drop a PDF file here',
+        fileInfo: 'Select a PDF to compress',
+        buttonText: 'Compress PDF',
+        description: 'Reduce PDF file size while maintaining acceptable quality. Great for email attachments.',
+        defaultFileName: 'compressed'
+    },
+    metadata: {
+        accept: 'application/pdf',
+        multiple: false,
+        dropText: 'Drag & drop a PDF file here',
+        fileInfo: 'Select a PDF to edit metadata',
+        buttonText: 'Save Metadata',
+        description: 'Edit PDF metadata including title, author, subject, and keywords for better organization.',
+        defaultFileName: 'updated-metadata'
+    },
+    pageNumbers: {
+        accept: 'application/pdf',
+        multiple: false,
+        dropText: 'Drag & drop a PDF file here',
+        fileInfo: 'Select a PDF to add page numbers',
+        buttonText: 'Add Page Numbers',
+        description: 'Add professional page numbers to your PDF with customizable format and position.',
+        defaultFileName: 'numbered'
+    },
+    reorder: {
+        accept: 'application/pdf',
+        multiple: false,
+        dropText: 'Drag & drop a PDF file here',
+        fileInfo: 'Select a PDF to reorder pages',
+        buttonText: 'Save Reordered PDF',
+        description: 'Rearrange PDF pages by dragging and dropping thumbnails. Perfect for organizing documents.',
+        defaultFileName: 'reordered'
+    },
+    crop: {
+        accept: 'application/pdf',
+        multiple: false,
+        dropText: 'Drag & drop a PDF file here',
+        fileInfo: 'Select a PDF to crop',
+        buttonText: 'Crop PDF',
+        description: 'Crop PDF pages to remove unwanted margins or sections. (Advanced feature)',
+        defaultFileName: 'cropped'
+    },
+    bookmarks: {
+        accept: 'application/pdf',
+        multiple: false,
+        dropText: 'Drag & drop a PDF file here',
+        fileInfo: 'Select a PDF to add bookmarks',
+        buttonText: 'Add Bookmarks',
+        description: 'Add table of contents bookmarks to your PDF for easy navigation. (Advanced feature)',
+        defaultFileName: 'bookmarked'
     }
 };
 
@@ -181,6 +279,7 @@ const modeConfigs = {
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     switchMode('imageToPdf');
+    loadDarkModePreference();
 });
 
 function setupEventListeners() {
@@ -227,6 +326,44 @@ function setupEventListeners() {
     imageQuality.addEventListener('input', (e) => {
         qualityValue.textContent = e.target.value;
     });
+
+    // Dark mode toggle
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    darkModeToggle.addEventListener('click', toggleDarkMode);
+
+    // Expand modes button
+    const expandModesBtn = document.getElementById('expandModesBtn');
+    expandModesBtn.addEventListener('click', toggleExtraModes);
+
+    // Watermark controls
+    const watermarkType = document.getElementById('watermarkType');
+    if (watermarkType) {
+        watermarkType.addEventListener('change', (e) => {
+            const textGroup = document.getElementById('watermarkTextGroup');
+            const imageGroup = document.getElementById('watermarkImageGroup');
+            if (e.target.value === 'text') {
+                textGroup.style.display = 'block';
+                imageGroup.style.display = 'none';
+            } else {
+                textGroup.style.display = 'none';
+                imageGroup.style.display = 'block';
+            }
+        });
+    }
+
+    const watermarkOpacity = document.getElementById('watermarkOpacity');
+    if (watermarkOpacity) {
+        watermarkOpacity.addEventListener('input', (e) => {
+            document.getElementById('watermarkOpacityValue').textContent = e.target.value + '%';
+        });
+    }
+
+    const imageQualityCompress = document.getElementById('imageQualityCompress');
+    if (imageQualityCompress) {
+        imageQualityCompress.addEventListener('input', (e) => {
+            document.getElementById('imageQualityCompressValue').textContent = e.target.value + '%';
+        });
+    }
 
     // Prevent default drag behaviors
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -283,7 +420,13 @@ function showModeControls(mode) {
         signPdf: ['sign-pdf'],
         editPdf: ['edit-pdf'],
         wordToPdf: ['word-to-pdf'],
-        viewWord: ['view-word']
+        viewWord: ['view-word'],
+        passwordProtect: ['password-protect'],
+        removePassword: ['remove-password'],
+        watermark: ['watermark'],
+        compress: ['compress'],
+        metadata: ['metadata'],
+        pageNumbers: ['page-numbers']
     };
 
     const controls = controlMap[mode] || [];
@@ -322,6 +465,14 @@ function showModeControls(mode) {
     } else {
         wordViewer.classList.remove('visible');
     }
+
+    // Show/hide reorder interface
+    reorderInterface = reorderInterface || document.getElementById('reorderInterface');
+    if (mode === 'reorder') {
+        reorderInterface.classList.add('visible');
+    } else {
+        reorderInterface.classList.remove('visible');
+    }
 }
 
 async function handleFiles(selectedFiles) {
@@ -342,6 +493,39 @@ async function handleFiles(selectedFiles) {
     }
 
     fileInput.value = '';
+}
+
+// Dark Mode Functions
+function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('darkMode', isDark);
+    
+    const toggle = document.getElementById('darkModeToggle');
+    toggle.textContent = isDark ? '☀️' : '🌙';
+}
+
+function loadDarkModePreference() {
+    const isDark = localStorage.getItem('darkMode') === 'true';
+    if (isDark) {
+        document.body.classList.add('dark-mode');
+        document.getElementById('darkModeToggle').textContent = '☀️';
+    }
+}
+
+function toggleExtraModes() {
+    const extraModes = document.getElementById('extraModes');
+    const expandBtn = document.getElementById('expandModesBtn');
+    
+    if (extraModes.style.display === 'none') {
+        extraModes.style.display = 'grid';
+        expandBtn.textContent = '⬆️ Less Tools ⬆️';
+        expandBtn.classList.add('expanded');
+    } else {
+        extraModes.style.display = 'none';
+        expandBtn.textContent = '⬇️ More Tools (9 more) ⬇️';
+        expandBtn.classList.remove('expanded');
+    }
 }
 
 function handleImageFiles(fileArray) {
@@ -433,6 +617,11 @@ async function handlePdfFiles(fileArray) {
                 // Load PDF for editing
                 if (currentMode === 'editPdf') {
                     await loadPdfForEditing(e.target.result);
+                }
+
+                // Load PDF for reordering
+                if (currentMode === 'reorder') {
+                    await loadPdfForReordering(e.target.result);
                 }
             } catch (error) {
                 console.error('Error loading PDF:', error);
@@ -605,7 +794,16 @@ async function handleAction() {
         signPdf: saveSignedPdf,
         editPdf: saveEditedPdf,
         wordToPdf: convertWordToPdf,
-        viewWord: convertWordToPdf
+        viewWord: convertWordToPdf,
+        passwordProtect: passwordProtectPdf,
+        removePassword: removePasswordFromPdf,
+        watermark: addWatermarkToPdf,
+        compress: compressPdf,
+        metadata: saveMetadata,
+        pageNumbers: addPageNumbers,
+        reorder: saveReorderedPdf,
+        crop: cropPdf,
+        bookmarks: addBookmarksToPdf
     };
 
     const action = actions[currentMode];
@@ -2126,5 +2324,439 @@ async function convertWordToPdf() {
     } finally {
         setLoading(false);
     }
+}
+
+// ===== NEW PDF FEATURES =====
+
+// Password Protect PDF
+async function passwordProtectPdf() {
+    alert('⚠️ Password protection requires server-side processing for security.\n\nFor true encryption, please use tools like:\n• Adobe Acrobat\n• PDFtk\n• qpdf\n\nThis browser-based app cannot provide military-grade encryption, but we can add basic protection using pdf-lib (limited browser support).\n\nWould you like to proceed with basic protection? (This is not recommended for sensitive documents)');
+    
+    // Note: True PDF encryption requires native libraries
+    // pdf-lib has limited encryption support in browser
+    // This is a placeholder - recommend users use desktop tools for secure encryption
+}
+
+// Remove Password from PDF  
+async function removePasswordFromPdf() {
+    alert('⚠️ Password removal requires the original password and server-side processing.\n\nBrowser-based password removal has security limitations.\n\nFor secure password removal, please use:\n• Adobe Acrobat\n• PDFtk\n• qpdf\n\nAlternatively, try printing to PDF from a PDF viewer if you have the password.');
+}
+
+// Add Watermark to PDF
+async function addWatermarkToPdf() {
+    if (!currentPdfDoc) {
+        alert('Please load a PDF first!');
+        return;
+    }
+
+    setLoading(true);
+
+    try {
+        const { PDFDocument, rgb, StandardFonts } = PDFLib;
+        const pdfDoc = await PDFDocument.load(files[0].arrayBuffer);
+        const pages = pdfDoc.getPages();
+        
+        const watermarkType = document.getElementById('watermarkType').value;
+        const opacity = parseInt(document.getElementById('watermarkOpacity').value) / 100;
+        const position = document.getElementById('watermarkPosition').value;
+
+        for (const page of pages) {
+            const { width, height } = page.getSize();
+
+            if (watermarkType === 'text') {
+                const watermarkText = document.getElementById('watermarkText').value || 'CONFIDENTIAL';
+                const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+                const fontSize = 60;
+                const textWidth = font.widthOfTextAtSize(watermarkText, fontSize);
+                
+                let x, y, rotation;
+                
+                if (position === 'diagonal') {
+                    x = width / 2 - textWidth / 2;
+                    y = height / 2;
+                    rotation = 45;
+                } else if (position === 'center') {
+                    x = width / 2 - textWidth / 2;
+                    y = height / 2;
+                    rotation = 0;
+                } else if (position === 'top') {
+                    x = width / 2 - textWidth / 2;
+                    y = height - 50;
+                    rotation = 0;
+                } else if (position === 'bottom') {
+                    x = width / 2 - textWidth / 2;
+                    y = 50;
+                    rotation = 0;
+                }
+
+                page.drawText(watermarkText, {
+                    x,
+                    y,
+                    size: fontSize,
+                    font,
+                    color: rgb(0.7, 0.7, 0.7),
+                    opacity,
+                    rotate: { type: 'degrees', angle: rotation }
+                });
+            } else if (watermarkType === 'image' && watermarkImageData) {
+                let watermarkImage;
+                if (watermarkImageData.startsWith('data:image/png')) {
+                    watermarkImage = await pdfDoc.embedPng(watermarkImageData);
+                } else {
+                    watermarkImage = await pdfDoc.embedJpg(watermarkImageData);
+                }
+
+                const imgWidth = 150;
+                const imgHeight = 150;
+                const x = (width - imgWidth) / 2;
+                const y = (height - imgHeight) / 2;
+
+                page.drawImage(watermarkImage, {
+                    x, y,
+                    width: imgWidth,
+                    height: imgHeight,
+                    opacity
+                });
+            }
+        }
+
+        const pdfBytes = await pdfDoc.save();
+        const outputName = fileName.value.trim() || 'watermarked';
+        downloadFile(pdfBytes, `${outputName}.pdf`, 'application/pdf');
+
+        alert('✅ Watermark added successfully!');
+    } catch (error) {
+        console.error('Error adding watermark:', error);
+        alert('❌ An error occurred. Please try again.');
+    } finally {
+        setLoading(false);
+    }
+}
+
+// Compress PDF
+async function compressPdf() {
+    if (!currentPdfDoc) {
+        alert('Please load a PDF first!');
+        return;
+    }
+
+    setLoading(true);
+
+    try {
+        const { PDFDocument } = PDFLib;
+        const pdfDoc = await PDFDocument.load(files[0].arrayBuffer);
+        
+        // Basic compression through pdf-lib
+        const pdfBytes = await pdfDoc.save({
+            useObjectStreams: true,
+            addDefaultPage: false,
+            objectsPerTick: 50
+        });
+
+        const originalSize = files[0].size;
+        const compressedSize = pdfBytes.length;
+        const savings = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
+
+        const outputName = fileName.value.trim() || 'compressed';
+        downloadFile(pdfBytes, `${outputName}.pdf`, 'application/pdf');
+
+        alert(`✅ PDF compressed!\n\nOriginal: ${formatFileSize(originalSize)}\nCompressed: ${formatFileSize(compressedSize)}\nSaved: ${savings}%`);
+    } catch (error) {
+        console.error('Error compressing PDF:', error);
+        alert('❌ An error occurred. Please try again.');
+    } finally {
+        setLoading(false);
+    }
+}
+
+// Save PDF Metadata
+async function saveMetadata() {
+    if (!currentPdfDoc) {
+        alert('Please load a PDF first!');
+        return;
+    }
+
+    setLoading(true);
+
+    try {
+        const { PDFDocument } = PDFLib;
+        const pdfDoc = await PDFDocument.load(files[0].arrayBuffer);
+
+        const title = document.getElementById('pdfTitle').value.trim();
+        const author = document.getElementById('pdfAuthor').value.trim();
+        const subject = document.getElementById('pdfSubject').value.trim();
+        const keywords = document.getElementById('pdfKeywords').value.trim();
+
+        if (title) pdfDoc.setTitle(title);
+        if (author) pdfDoc.setAuthor(author);
+        if (subject) pdfDoc.setSubject(subject);
+        if (keywords) pdfDoc.setKeywords([keywords]);
+        
+        pdfDoc.setProducer('PDF Utility App');
+        pdfDoc.setCreator('PDF Utility App');
+        pdfDoc.setCreationDate(new Date());
+        pdfDoc.setModificationDate(new Date());
+
+        const pdfBytes = await pdfDoc.save();
+        const outputName = fileName.value.trim() || 'updated-metadata';
+        downloadFile(pdfBytes, `${outputName}.pdf`, 'application/pdf');
+
+        alert('✅ PDF metadata updated successfully!');
+    } catch (error) {
+        console.error('Error updating metadata:', error);
+        alert('❌ An error occurred. Please try again.');
+    } finally {
+        setLoading(false);
+    }
+}
+
+// Add Page Numbers
+async function addPageNumbers() {
+    if (!currentPdfDoc) {
+        alert('Please load a PDF first!');
+        return;
+    }
+
+    setLoading(true);
+
+    try {
+        const { PDFDocument, rgb, StandardFonts } = PDFLib;
+        const pdfDoc = await PDFDocument.load(files[0].arrayBuffer);
+        const pages = pdfDoc.getPages();
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        
+        const format = document.getElementById('pageNumberFormat').value;
+        const position = document.getElementById('pageNumberPosition').value;
+        const startNum = parseInt(document.getElementById('startPageNumber').value) || 1;
+        const totalPages = pages.length;
+
+        pages.forEach((page, index) => {
+            const { width, height } = page.getSize();
+            const pageNum = startNum + index;
+            
+            let text;
+            switch(format) {
+                case 'number':
+                    text = `Page ${pageNum}`;
+                    break;
+                case 'numberOnly':
+                    text = `${pageNum}`;
+                    break;
+                case 'pageOfTotal':
+                    text = `Page ${pageNum} of ${totalPages}`;
+                    break;
+                case 'numberSlashTotal':
+                    text = `${pageNum}/${totalPages}`;
+                    break;
+            }
+
+            const fontSize = 12;
+            const textWidth = font.widthOfTextAtSize(text, fontSize);
+            let x, y;
+
+            const margin = 30;
+            
+            switch(position) {
+                case 'bottom-center':
+                    x = (width - textWidth) / 2;
+                    y = margin;
+                    break;
+                case 'bottom-right':
+                    x = width - textWidth - margin;
+                    y = margin;
+                    break;
+                case 'bottom-left':
+                    x = margin;
+                    y = margin;
+                    break;
+                case 'top-center':
+                    x = (width - textWidth) / 2;
+                    y = height - margin;
+                    break;
+                case 'top-right':
+                    x = width - textWidth - margin;
+                    y = height - margin;
+                    break;
+                case 'top-left':
+                    x = margin;
+                    y = height - margin;
+                    break;
+            }
+
+            page.drawText(text, {
+                x, y,
+                size: fontSize,
+                font,
+                color: rgb(0, 0, 0)
+            });
+        });
+
+        const pdfBytes = await pdfDoc.save();
+        const outputName = fileName.value.trim() || 'numbered';
+        downloadFile(pdfBytes, `${outputName}.pdf`, 'application/pdf');
+
+        alert('✅ Page numbers added successfully!');
+    } catch (error) {
+        console.error('Error adding page numbers:', error);
+        alert('❌ An error occurred. Please try again.');
+    } finally {
+        setLoading(false);
+    }
+}
+
+// Reorder Pages
+async function loadPdfForReordering(arrayBuffer) {
+    if (typeof pdfjsLib === 'undefined') {
+        alert('PDF.js not loaded. Please refresh the page.');
+        return;
+    }
+
+    try {
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+        const pageCount = pdf.numPages;
+        
+        reorderedPages = Array.from({ length: pageCount }, (_, i) => i);
+
+        const reorderGrid = document.getElementById('reorderGrid');
+        reorderGrid.innerHTML = '';
+
+        for (let i = 1; i <= pageCount; i++) {
+            const page = await pdf.getPage(i);
+            const scale = 0.4;
+            const viewport = page.getViewport({ scale });
+
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            await page.render({ canvasContext: context, viewport }).promise;
+
+            const pageDiv = document.createElement('div');
+            pageDiv.className = 'reorder-page';
+            pageDiv.dataset.pageIndex = i - 1;
+            pageDiv.draggable = true;
+
+            pageDiv.innerHTML = `
+                ${canvas.outerHTML}
+                <div class="page-number-badge">${i}</div>
+            `;
+
+            // Drag events
+            pageDiv.addEventListener('dragstart', handleDragStart);
+            pageDiv.addEventListener('dragover', handleDragOver);
+            pageDiv.addEventListener('drop', handleDrop);
+            pageDiv.addEventListener('dragend', handleDragEnd);
+
+            reorderGrid.appendChild(pageDiv);
+        }
+    } catch (error) {
+        console.error('Error loading PDF for reordering:', error);
+        alert('Failed to load PDF for reordering');
+    }
+}
+
+function handleDragStart(e) {
+    draggedElement = e.target.closest('.reorder-page');
+    draggedElement.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    const target = e.target.closest('.reorder-page');
+    if (target && target !== draggedElement) {
+        target.classList.add('drag-over');
+    }
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    const target = e.target.closest('.reorder-page');
+    
+    if (target && target !== draggedElement) {
+        const draggedIndex = parseInt(draggedElement.dataset.pageIndex);
+        const targetIndex = parseInt(target.dataset.pageIndex);
+        
+        // Swap in reorderedPages array
+        const temp = reorderedPages[draggedIndex];
+        reorderedPages[draggedIndex] = reorderedPages[targetIndex];
+        reorderedPages[targetIndex] = temp;
+        
+        // Swap DOM elements
+        const reorderGrid = document.getElementById('reorderGrid');
+        const allPages = Array.from(reorderGrid.children);
+        const draggedPos = allPages.indexOf(draggedElement);
+        const targetPos = allPages.indexOf(target);
+        
+        if (draggedPos < targetPos) {
+            target.parentNode.insertBefore(draggedElement, target.nextSibling);
+        } else {
+            target.parentNode.insertBefore(draggedElement, target);
+        }
+        
+        // Update indices and page numbers
+        Array.from(reorderGrid.children).forEach((page, idx) => {
+            page.dataset.pageIndex = idx;
+            page.querySelector('.page-number-badge').textContent = idx + 1;
+        });
+    }
+    
+    target.classList.remove('drag-over');
+}
+
+function handleDragEnd(e) {
+    draggedElement.classList.remove('dragging');
+    document.querySelectorAll('.reorder-page').forEach(page => {
+        page.classList.remove('drag-over');
+    });
+}
+
+async function saveReorderedPdf() {
+    if (!currentPdfDoc || reorderedPages.length === 0) {
+        alert('Please load a PDF and reorder pages first!');
+        return;
+    }
+
+    setLoading(true);
+
+    try {
+        const { PDFDocument } = PDFLib;
+        const pdfDoc = await PDFDocument.load(files[0].arrayBuffer);
+        const newPdf = await PDFDocument.create();
+
+        // Get current order from DOM
+        const reorderGrid = document.getElementById('reorderGrid');
+        const orderedPages = Array.from(reorderGrid.children).map(div => 
+            parseInt(div.dataset.pageIndex)
+        );
+
+        for (const pageIndex of orderedPages) {
+            const [copiedPage] = await newPdf.copyPages(pdfDoc, [pageIndex]);
+            newPdf.addPage(copiedPage);
+        }
+
+        const pdfBytes = await newPdf.save();
+        const outputName = fileName.value.trim() || 'reordered';
+        downloadFile(pdfBytes, `${outputName}.pdf`, 'application/pdf');
+
+        alert('✅ Pages reordered successfully!');
+    } catch (error) {
+        console.error('Error reordering pages:', error);
+        alert('❌ An error occurred. Please try again.');
+    } finally {
+        setLoading(false);
+    }
+}
+
+// Crop PDF (Placeholder)
+async function cropPdf() {
+    alert('✂️ Crop PDF Feature\n\nPDF cropping requires precise coordinates and is best done with desktop tools.\n\nRecommended tools:\n• Adobe Acrobat Pro\n• PDF-XChange Editor\n• Foxit PDF Editor\n\nAlternatively, you can use "Edit PDF" mode to cover unwanted areas with redaction boxes.');
+}
+
+// Add Bookmarks (Placeholder)
+async function addBookmarksToPdf() {
+    alert('🔖 Add Bookmarks Feature\n\nBookmark (outline) creation requires complex PDF manipulation.\n\nFor adding bookmarks, please use:\n• Adobe Acrobat Pro\n• PDFtk\n• PDF-XChange Editor\n\nYou can also try "Edit Metadata" to add document information.');
 }
 

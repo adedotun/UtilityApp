@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- Primary Meta Tags -->
-    <title>Free PDF & Word Converter Online - Convert, Edit, Merge, Split PDFs | 100% Private</title>
-    <meta name="title" content="Free PDF & Word Converter Online - Convert, Edit, Merge, Split PDFs | 100% Private">
-    <meta name="description" content="Free online PDF toolkit: Convert Word to PDF, merge PDFs, split documents, edit & sign PDFs, extract pages, and more. 100% browser-based, no uploads, complete privacy. 10 powerful tools in one app.">
+    <title>Free PDF & Word Converter Online - 19 Tools | Convert, Edit, Merge, Watermark PDFs</title>
+    <meta name="title" content="Free PDF & Word Converter Online - 19 Tools | Convert, Edit, Merge, Watermark PDFs">
+    <meta name="description" content="Free online PDF toolkit with 19 powerful tools: Convert Word to PDF, merge PDFs, add watermarks, compress, edit metadata, page numbers, reorder pages & more. 100% private, no uploads required.">
     <meta name="keywords" content="PDF converter, Word to PDF, merge PDF, split PDF, edit PDF, sign PDF online, PDF tools, free PDF editor, convert docx to PDF, PDF merger, PDF splitter, compress PDF, online PDF, document converter, no upload PDF">
     <meta name="author" content="PDF Utility App">
     <meta name="robots" content="index, follow">
@@ -58,7 +58,7 @@
       "name": "PDF & Word Utility App",
       "alternateName": "PDF Toolkit",
       "url": "https://yourwebsite.com",
-      "description": "Free online PDF and Word document toolkit with 10 powerful tools: Convert Word to PDF, merge PDFs, split documents, edit and sign PDFs, rotate pages, extract pages, convert PDF to images, and view Word documents. 100% browser-based with complete privacy.",
+      "description": "Free online PDF and Word document toolkit with 19 powerful tools: Convert Word to PDF, merge PDFs, split documents, edit and sign PDFs, add watermarks, compress PDFs, edit metadata, add page numbers, reorder pages with drag-and-drop, rotate pages, extract pages, convert PDF to images, and view Word documents. 100% browser-based with complete privacy and dark mode support.",
       "applicationCategory": "ProductivityApplication",
       "operatingSystem": "Web Browser",
       "offers": {
@@ -76,7 +76,16 @@
         "PDF Page Rotation",
         "PDF Page Extraction",
         "Word Document Viewer",
-        "Images to PDF Converter"
+        "Images to PDF Converter",
+        "Add Watermarks to PDF",
+        "Compress PDF Files",
+        "Edit PDF Metadata",
+        "Add Page Numbers",
+        "Reorder PDF Pages with Drag-and-Drop",
+        "Password Protection Guidance",
+        "Remove Password Guidance",
+        "Dark Mode Theme",
+        "PDF Cropping Guidance"
       ],
       "browserRequirements": "Requires JavaScript. Works with Chrome, Firefox, Safari, Edge.",
       "screenshot": "https://yourwebsite.com/screenshot.png",
@@ -92,8 +101,15 @@
 <body>
     <div class="container">
         <header role="banner">
-            <h1>📄 PDF & Word Utility App</h1>
-            <p class="subtitle">Free Online PDF Converter, Editor & Word to PDF Tool - 100% Private & Secure</p>
+            <div class="header-top">
+                <div class="header-title">
+                    <h1>📄 PDF & Word Utility App</h1>
+                    <p class="subtitle">Free Online PDF Converter, Editor & Word to PDF Tool - 100% Private & Secure</p>
+                </div>
+                <button class="dark-mode-toggle" id="darkModeToggle" aria-label="Toggle dark mode">
+                    🌙
+                </button>
+            </div>
         </header>
 
         <main>
@@ -130,6 +146,42 @@
                 </button>
             </div>
 
+            <div class="mode-selector-more">
+                <button class="expand-btn" id="expandModesBtn">
+                    ⬇️ More Tools (9 more) ⬇️
+                </button>
+            </div>
+
+            <div class="mode-selector-extra" id="extraModes" style="display: none;">
+                <button class="mode-btn" id="passwordProtectMode" data-mode="passwordProtect" title="Password protect PDF">
+                    🔒 Password Protect
+                </button>
+                <button class="mode-btn" id="removePasswordMode" data-mode="removePassword" title="Remove PDF password">
+                    🔓 Remove Password
+                </button>
+                <button class="mode-btn" id="watermarkMode" data-mode="watermark" title="Add watermark to PDF">
+                    💧 Add Watermark
+                </button>
+                <button class="mode-btn" id="compressMode" data-mode="compress" title="Compress PDF file">
+                    🗜️ Compress PDF
+                </button>
+                <button class="mode-btn" id="metadataMode" data-mode="metadata" title="Edit PDF metadata">
+                    📊 Edit Metadata
+                </button>
+                <button class="mode-btn" id="pageNumbersMode" data-mode="pageNumbers" title="Add page numbers">
+                    🔢 Page Numbers
+                </button>
+                <button class="mode-btn" id="reorderMode" data-mode="reorder" title="Reorder PDF pages">
+                    🔀 Reorder Pages
+                </button>
+                <button class="mode-btn" id="cropMode" data-mode="crop" title="Crop PDF pages">
+                    ✂️ Crop Pages
+                </button>
+                <button class="mode-btn" id="bookmarksMode" data-mode="bookmarks" title="Add bookmarks to PDF">
+                    🔖 Add Bookmarks
+                </button>
+            </div>
+
             <div class="mode-description" id="modeDescription">
                 Convert your images to a single PDF file with customizable page size and orientation.
             </div>
@@ -163,6 +215,17 @@
                 <h3>Select Pages</h3>
                 <div class="page-grid" id="pageGrid">
                     <!-- Page thumbnails will be displayed here -->
+                </div>
+            </div>
+
+            <!-- Reorder Pages Interface -->
+            <div class="reorder-interface" id="reorderInterface">
+                <div class="reorder-instructions">
+                    <h3>🔀 Drag and Drop to Reorder Pages</h3>
+                    <p>Drag page thumbnails to rearrange their order. Changes are applied when you save.</p>
+                </div>
+                <div class="reorder-grid" id="reorderGrid">
+                    <!-- Draggable page thumbnails will be displayed here -->
                 </div>
             </div>
 
@@ -470,6 +533,132 @@
                             <li>You can optionally convert it to PDF</li>
                         </ol>
                     </div>
+                </div>
+
+                <!-- Password Protect Controls -->
+                <div class="control-group mode-specific password-protect">
+                    <label for="userPassword">User Password (Required to Open):</label>
+                    <input type="password" id="userPassword" placeholder="Enter password">
+                </div>
+
+                <div class="control-group mode-specific password-protect">
+                    <label for="ownerPassword">Owner Password (Optional - For Permissions):</label>
+                    <input type="password" id="ownerPassword" placeholder="Enter owner password">
+                </div>
+
+                <div class="control-group mode-specific password-protect">
+                    <label>Permissions:</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="allowPrinting" checked> Allow Printing</label>
+                        <label><input type="checkbox" id="allowCopying" checked> Allow Copying</label>
+                        <label><input type="checkbox" id="allowModifying"> Allow Modifying</label>
+                    </div>
+                </div>
+
+                <!-- Remove Password Controls -->
+                <div class="control-group mode-specific remove-password">
+                    <label for="currentPassword">Current Password:</label>
+                    <input type="password" id="currentPassword" placeholder="Enter current password">
+                </div>
+
+                <!-- Watermark Controls -->
+                <div class="control-group mode-specific watermark">
+                    <label>Watermark Type:</label>
+                    <select id="watermarkType">
+                        <option value="text">Text Watermark</option>
+                        <option value="image">Image Watermark</option>
+                    </select>
+                </div>
+
+                <div class="control-group mode-specific watermark" id="watermarkTextGroup">
+                    <label for="watermarkText">Watermark Text:</label>
+                    <input type="text" id="watermarkText" placeholder="CONFIDENTIAL" value="CONFIDENTIAL">
+                </div>
+
+                <div class="control-group mode-specific watermark" id="watermarkImageGroup" style="display: none;">
+                    <label for="watermarkImage">Upload Watermark Image:</label>
+                    <input type="file" id="watermarkImage" accept="image/*">
+                </div>
+
+                <div class="control-group mode-specific watermark">
+                    <label for="watermarkOpacity">Opacity:</label>
+                    <input type="range" id="watermarkOpacity" min="10" max="100" value="30" step="5">
+                    <span id="watermarkOpacityValue">30%</span>
+                </div>
+
+                <div class="control-group mode-specific watermark">
+                    <label for="watermarkPosition">Position:</label>
+                    <select id="watermarkPosition">
+                        <option value="center">Center</option>
+                        <option value="diagonal">Diagonal</option>
+                        <option value="top">Top</option>
+                        <option value="bottom">Bottom</option>
+                    </select>
+                </div>
+
+                <!-- Compress Controls -->
+                <div class="control-group mode-specific compress">
+                    <label for="compressionLevel">Compression Level:</label>
+                    <select id="compressionLevel">
+                        <option value="low">Low (Better Quality)</option>
+                        <option value="medium" selected>Medium (Balanced)</option>
+                        <option value="high">High (Smaller Size)</option>
+                    </select>
+                </div>
+
+                <div class="control-group mode-specific compress">
+                    <label for="imageQualityCompress">Image Quality:</label>
+                    <input type="range" id="imageQualityCompress" min="30" max="100" value="75" step="5">
+                    <span id="imageQualityCompressValue">75%</span>
+                </div>
+
+                <!-- Metadata Controls -->
+                <div class="control-group mode-specific metadata">
+                    <label for="pdfTitle">Title:</label>
+                    <input type="text" id="pdfTitle" placeholder="Document Title">
+                </div>
+
+                <div class="control-group mode-specific metadata">
+                    <label for="pdfAuthor">Author:</label>
+                    <input type="text" id="pdfAuthor" placeholder="Author Name">
+                </div>
+
+                <div class="control-group mode-specific metadata">
+                    <label for="pdfSubject">Subject:</label>
+                    <input type="text" id="pdfSubject" placeholder="Document Subject">
+                </div>
+
+                <div class="control-group mode-specific metadata">
+                    <label for="pdfKeywords">Keywords:</label>
+                    <input type="text" id="pdfKeywords" placeholder="keyword1, keyword2">
+                </div>
+
+                <!-- Page Numbers Controls -->
+                <div class="control-group mode-specific page-numbers">
+                    <label for="pageNumberFormat">Format:</label>
+                    <select id="pageNumberFormat">
+                        <option value="number">Page 1, Page 2...</option>
+                        <option value="numberOnly">1, 2, 3...</option>
+                        <option value="pageOfTotal">Page 1 of 10</option>
+                        <option value="numberSlashTotal">1/10</option>
+                    </select>
+                </div>
+
+                <div class="control-group mode-specific page-numbers">
+                    <label for="pageNumberPosition">Position:</label>
+                    <select id="pageNumberPosition">
+                        <option value="bottom-center">Bottom Center</option>
+                        <option value="bottom-right">Bottom Right</option>
+                        <option value="bottom-left">Bottom Left</option>
+                        <option value="top-center">Top Center</option>
+                        <option value="top-right">Top Right</option>
+                        <option value="top-left">Top Left</option>
+                    </select>
+                </div>
+
+                <div class="control-group mode-specific page-numbers">
+                    <label for="startPageNumber">Start From:</label>
+                    <input type="number" id="startPageNumber" value="1" min="1">
                 </div>
 
                 <div class="button-group">

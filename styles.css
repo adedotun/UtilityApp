@@ -20,6 +20,35 @@
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
+/* Dark Mode Colors */
+body.dark-mode {
+    --bg-color: #1e293b;
+    --card-bg: #0f172a;
+    --text-color: #f1f5f9;
+    --text-light: #94a3b8;
+    --border-color: #334155;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+}
+
+body.dark-mode .drop-zone {
+    background: #1e293b;
+}
+
+body.dark-mode .image-card,
+body.dark-mode .pdf-card {
+    background: #1e293b;
+}
+
+body.dark-mode .word-document {
+    background: #1e293b;
+    color: var(--text-color);
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -41,6 +70,18 @@ header {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
     color: white;
     padding: 40px;
+    position: relative;
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.header-title {
+    flex: 1;
     text-align: center;
 }
 
@@ -53,6 +94,26 @@ header h1 {
 .subtitle {
     font-size: 1.1rem;
     opacity: 0.9;
+}
+
+.dark-mode-toggle {
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-size: 1.5rem;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dark-mode-toggle:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
 }
 
 main {
@@ -90,6 +151,66 @@ main {
     background: var(--primary-color);
     color: white;
     border-color: var(--primary-color);
+}
+
+/* Mode Selector More */
+.mode-selector-more {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.expand-btn {
+    background: var(--bg-color);
+    border: 2px solid var(--border-color);
+    color: var(--text-color);
+    padding: 12px 32px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.expand-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.expand-btn.expanded {
+    background: var(--primary-color);
+    color: white;
+}
+
+.mode-selector-extra {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+/* Checkbox Group */
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    background: var(--bg-color);
+    border-radius: 6px;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    font-weight: normal;
+    cursor: pointer;
+}
+
+.checkbox-group input[type="checkbox"] {
+    margin-right: 8px;
+    cursor: pointer;
 }
 
 /* Mode Description */
@@ -884,6 +1005,86 @@ main {
 .page-selection h3 {
     margin-bottom: 15px;
     color: var(--text-color);
+}
+
+/* Reorder Pages Interface */
+.reorder-interface {
+    display: none;
+    margin-bottom: 30px;
+}
+
+.reorder-interface.visible {
+    display: block;
+}
+
+.reorder-instructions {
+    background: var(--bg-color);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.reorder-instructions h3 {
+    color: var(--text-color);
+    margin-bottom: 10px;
+}
+
+.reorder-instructions p {
+    color: var(--text-light);
+}
+
+.reorder-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 20px;
+}
+
+.reorder-page {
+    position: relative;
+    border: 3px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: grab;
+    transition: all 0.3s ease;
+    background: white;
+    aspect-ratio: 8.5 / 11;
+}
+
+.reorder-page:hover {
+    border-color: var(--primary-color);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-lg);
+}
+
+.reorder-page.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.reorder-page.drag-over {
+    border-color: var(--success-color);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.reorder-page canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.reorder-page .page-number-badge {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--primary-color);
+    color: white;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 1rem;
 }
 
 /* Word Document Viewer */
