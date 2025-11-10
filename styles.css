@@ -1177,6 +1177,78 @@ footer {
     font-size: 0.875rem;
 }
 
+footer p {
+    margin-bottom: 10px;
+}
+
+.footer-keywords {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    opacity: 0.8;
+}
+
+.footer-copyright {
+    font-size: 0.75rem;
+    margin-top: 15px;
+}
+
+footer a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+footer a:hover {
+    color: var(--primary-hover);
+    text-decoration: underline;
+}
+
+/* FAQ Section */
+.faq-section {
+    background: var(--bg-color);
+    padding: 40px;
+    margin: 0;
+}
+
+.faq-section h2 {
+    text-align: center;
+    color: var(--text-color);
+    margin-bottom: 30px;
+    font-size: 2rem;
+}
+
+.faq-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.faq-item {
+    background: white;
+    padding: 20px;
+    margin-bottom: 15px;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--primary-color);
+    transition: all 0.3s ease;
+}
+
+.faq-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.faq-item h3 {
+    color: var(--text-color);
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+}
+
+.faq-item p {
+    color: var(--text-color);
+    line-height: 1.6;
+    margin: 0;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     header h1 {

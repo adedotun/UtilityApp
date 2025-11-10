@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+    
+    <!-- Main Page -->
+    <url>
+        <loc>https://yourwebsite.com/</loc>
+        <lastmod>2024-11-10</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>1.0</priority>
+    </url>
+    
+    <!-- Word to PDF Converter -->
+    <url>
+        <loc>https://yourwebsite.com/#word-to-pdf</loc>
+        <lastmod>2024-11-10</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.9</priority>
+    </url>
+    
+    <!-- View Word Documents -->
+    <url>
+        <loc>https://yourwebsite.com/#view-word</loc>
+        <lastmod>2024-11-10</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.9</priority>
+    </url>
+    
+    <!-- Edit PDF -->
+    <url>
+        <loc>https://yourwebsite.com/#edit-pdf</loc>
+        <lastmod>2024-11-10</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.9</priority>
+    </url>
+    
+    <!-- Sign PDF -->
+    <url>
+        <loc>https://yourwebsite.com/#sign-pdf</loc>
+        <lastmod>2024-11-10</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.9</priority>
+    </url>
+    
+    <!-- Images to PDF -->
+    <url>
+        <loc>https://yourwebsite.com/#images-to-pdf</loc>
+        <lastmod>2024-11-10</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <!-- Merge PDFs -->
+    <url>
+        <loc>https://yourwebsite.com/#merge-pdf</loc>
+        <lastmod>2024-11-10</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <!-- PDF to Images -->
+    <url>
+        <loc>https://yourwebsite.com/#pdf-to-images</loc>
+        <lastmod>2024-11-10</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <!-- Split PDF -->
+    <url>
+        <loc>https://yourwebsite.com/#split-pdf</loc>
+        <lastmod>2024-11-10</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <!-- Rotate PDF -->
+    <url>
+        <loc>https://yourwebsite.com/#rotate-pdf</loc>
+        <lastmod>2024-11-10</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    
+    <!-- Extract Pages -->
+    <url>
+        <loc>https://yourwebsite.com/#extract-pages</loc>
+        <lastmod>2024-11-10</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    
+</urlset>
+

@@ -498,6 +498,90 @@ Potential features to add:
 - [ ] Batch processing multiple files
 - [ ] Cloud storage integration (optional)
 
+## 🔍 SEO & Discoverability
+
+This application is fully optimized for search engines to help users find it easily:
+
+### SEO Features Implemented
+
+1. **Comprehensive Meta Tags**
+   - Title, description, keywords optimized for search
+   - Open Graph tags for social media sharing
+   - Twitter Card tags for Twitter previews
+   - Proper canonical URLs
+
+2. **Structured Data (JSON-LD)**
+   - Schema.org WebApplication markup
+   - Rich snippets for search results
+   - Feature list and pricing information
+   - Ratings and reviews data
+
+3. **robots.txt**
+   - Guides search engine crawlers
+   - Specifies crawlable content
+   - Links to sitemap
+
+4. **sitemap.xml**
+   - Lists all important pages/features
+   - Helps search engines index content
+   - Includes priority and update frequency
+
+5. **PWA Manifest**
+   - Progressive Web App capabilities
+   - Installable on mobile devices
+   - Improved mobile SEO rankings
+
+6. **Semantic HTML**
+   - Proper heading hierarchy
+   - ARIA labels for accessibility
+   - Role attributes for better structure
+
+### To Deploy & Optimize SEO:
+
+1. **Update URLs**: Replace `https://yourwebsite.com/` with your actual domain in:
+   - `index.html` (meta tags, canonical, Open Graph, JSON-LD)
+   - `sitemap.xml` (all URL entries)
+   - `robots.txt` (Sitemap location)
+
+2. **Add Images**: Create and add these images for better social sharing:
+   - `og-image.png` (1200x630px) - Open Graph image
+   - `twitter-image.png` (1200x600px) - Twitter Card image
+   - `screenshot.png` (1280x720px) - App screenshot
+   - `favicon-32x32.png` and `favicon-16x16.png` - Favicons
+   - `apple-touch-icon.png` (180x180px) - iOS icon
+   - PWA icons (72x72 to 512x512px)
+
+3. **Submit to Search Engines**:
+   - Google Search Console: Submit sitemap
+   - Bing Webmaster Tools: Submit sitemap
+   - Verify ownership and monitor indexing
+
+4. **Content Marketing**:
+   - Create blog posts about PDF tools
+   - Share on social media
+   - Get backlinks from relevant sites
+   - List on tool directories
+
+5. **Performance Optimization**:
+   - Enable HTTPS (required for PWA)
+   - Use CDN for faster loading
+   - Compress images
+   - Enable browser caching
+
+### Target Keywords
+
+The app is optimized for these high-value search terms:
+- "free PDF converter"
+- "Word to PDF online"
+- "merge PDF files"
+- "split PDF online"
+- "edit PDF free"
+- "sign PDF online"
+- "PDF tools"
+- "convert docx to PDF"
+- "PDF editor online free"
+- "no upload PDF converter"
+
 ## 📊 Performance Tips
 
 1. **Large PDFs**: May take time to process - be patient
@@ -505,6 +589,74 @@ Potential features to add:
 3. **High Resolution**: Balance quality vs file size
 4. **Browser**: Use modern browser for best performance
 5. **Memory**: Close other tabs if processing large files
+
+## 🚀 Deployment Guide
+
+### Quick Deployment Steps
+
+1. **Get a Domain**: Register a domain name (e.g., pdfutility.com)
+
+2. **Choose Hosting**: 
+   - GitHub Pages (free)
+   - Netlify (free tier available)
+   - Vercel (free tier available)
+   - Cloudflare Pages (free)
+   - Traditional hosting (shared, VPS)
+
+3. **Enable HTTPS**: Essential for security and SEO
+   - Let's Encrypt (free SSL)
+   - Cloudflare SSL (free)
+   - Hosting provider SSL
+
+4. **Upload Files**: All files from this directory
+
+5. **Update URLs**: Replace placeholder URLs with your domain
+
+6. **Submit to Search Engines**: See SEO-CHECKLIST.md
+
+### Recommended Hosting (Free Options)
+
+#### GitHub Pages
+```bash
+# Create repo, then:
+git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/yourusername/pdf-utility.git
+git push -u origin main
+
+# Enable GitHub Pages in repo settings
+```
+
+#### Netlify
+1. Drag and drop your folder to Netlify
+2. Custom domain setup
+3. HTTPS automatically enabled
+
+#### Vercel
+```bash
+npm install -g vercel
+vercel
+# Follow prompts
+```
+
+### Post-Deployment SEO
+
+1. **Verify Ownership**:
+   - Add Google Search Console verification
+   - Add Bing Webmaster Tools verification
+
+2. **Submit Sitemap**:
+   - Google Search Console → Sitemaps → Submit `sitemap.xml`
+   - Bing Webmaster Tools → Sitemaps → Submit `sitemap.xml`
+
+3. **Monitor**:
+   - Check indexing status weekly
+   - Review search performance
+   - Fix any crawl errors
+
+See `SEO-CHECKLIST.md` for comprehensive SEO guidance.
 
 ## 🤝 Contributing
 

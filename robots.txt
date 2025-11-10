@@ -1,0 +1,41 @@
+# robots.txt for PDF & Word Utility App
+# This file tells search engines which pages they can and cannot crawl
+
+User-agent: *
+Allow: /
+
+# Disallow any temporary or system files
+Disallow: /node_modules/
+Disallow: /.git/
+Disallow: /*.json$
+Disallow: /script.js
+Disallow: /styles.css
+
+# Allow important resources
+Allow: /index.html
+Allow: /manifest.json
+Allow: /sitemap.xml
+
+# Sitemap location
+Sitemap: https://yourwebsite.com/sitemap.xml
+
+# Crawl delay (optional - be polite to servers)
+Crawl-delay: 1
+
+# Specific bot instructions
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+# Block bad bots (optional)
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10
+
