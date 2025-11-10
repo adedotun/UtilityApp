@@ -1,8 +1,36 @@
-# 📄 PDF Utility App - Complete PDF Toolkit
+# 📄 PDF & Word Utility App - Complete Document Toolkit
 
-A beautiful, modern web application that provides a complete suite of PDF tools - all directly in your browser. No uploads required - everything runs client-side for maximum privacy and speed!
+A beautiful, modern web application that provides a complete suite of PDF and Word document tools - all directly in your browser. No uploads required - everything runs client-side for maximum privacy and speed!
 
 ## ✨ Features
+
+### 📘 Word → PDF
+Convert Microsoft Word documents to PDF:
+- **Convert .docx to PDF**: Seamless conversion
+- **Multiple Documents**: Convert and merge multiple Word files
+- **Preserved Formatting**: Maintains styles, fonts, and layout
+- **Tables & Images**: Converts complex documents
+- **Fast Processing**: Quick browser-based conversion
+
+### 📖 View Word
+View Word documents directly in browser:
+- **No Word Required**: View .docx without Microsoft Word
+- **In-Browser Preview**: Instant document viewing
+- **Convert Option**: Optionally convert to PDF
+- **Formatting Display**: Shows text, headings, lists, tables
+
+### ✏️ Edit PDF
+Comprehensive PDF editing and markup tools:
+- **🟨 Highlight**: Highlight important text and sections
+- **⬛ Redact**: Black out sensitive information
+- **✏️ Draw**: Freehand drawing for annotations
+- **◼️ Shapes**: Add rectangles, circles, lines, and arrows
+- **📝 Text Boxes**: Insert custom text anywhere
+- **🖼️ Add Images**: Insert images and logos
+- **🧹 Eraser**: Remove unwanted marks
+- **↶ Undo**: Undo your last action
+- **Multi-Page**: Edit across all pages
+- **Customizable**: Adjust colors, opacity, and sizes
 
 ### ✍️ Sign PDF
 Add signatures, text, and dates to your PDF documents:
@@ -96,6 +124,65 @@ npx http-server -p 8000
 Then open: `http://localhost:8000`
 
 ## 📖 Detailed Usage Guide
+
+### 📘 Word → PDF
+
+1. Click "📘 Word → PDF"
+2. Add one or more Word documents (.docx files)
+3. Documents will be processed and displayed
+4. Optionally customize the PDF name
+5. Click "Convert to PDF"
+6. Your PDF will download automatically
+
+**Tips:**
+- You can convert multiple Word files at once - they'll be combined into one PDF
+- Original formatting is preserved as much as possible
+- Complex documents with tables and images are supported
+- The conversion happens entirely in your browser
+
+### 📖 View Word
+
+1. Click "📖 View Word"
+2. Add a Word document (.docx file)
+3. The document will be displayed in the viewer below
+4. Review the content in your browser
+5. Optionally click "Convert to PDF" to save as PDF
+
+**Tips:**
+- Perfect for quickly viewing .docx files without Word
+- No Microsoft Word installation required
+- You can preview before converting to PDF
+- Works with standard .docx files
+
+### ✏️ Edit PDF
+
+1. Click "✏️ Edit PDF"
+2. Add a PDF file to edit
+3. Select a tool from the left sidebar:
+   - **Highlight**: Drag over text to highlight (adjustable color & opacity)
+   - **Redact**: Draw black boxes over sensitive information
+   - **Draw**: Freehand drawing with adjustable pen size
+   - **Shapes**: Draw rectangles, circles, lines, or arrows
+   - **Text Box**: Click to add text annotations
+   - **Add Image**: Upload and place images/logos
+   - **Eraser**: Remove unwanted marks
+4. Customize tool settings:
+   - Change colors
+   - Adjust opacity (transparency)
+   - Modify line/brush size
+   - Fill shapes or outline only
+5. Navigate through pages with ← → buttons
+6. Use "Undo" to remove last action
+7. Use "Clear Page" to remove all edits from current page
+8. Click "Save Edited PDF" when done
+
+**Tips:**
+- Highlight tool is semi-transparent by default - perfect for marking text
+- Redact tool creates solid black marks - ideal for hiding sensitive info
+- Draw tool works great with mouse or touch
+- Shapes can be filled or outlined
+- Images are automatically resized to fit nicely
+- All edits are permanently embedded in the PDF
 
 ### ✍️ Sign PDF
 
@@ -220,9 +307,11 @@ Then open: `http://localhost:8000`
 - **HTML5**: Modern semantic markup
 - **CSS3**: Grid, Flexbox, animations, gradients
 - **JavaScript (ES6+)**: Async/await, modules, modern syntax
-- **jsPDF**: PDF generation from images
+- **jsPDF**: PDF generation from images and HTML
 - **pdf-lib**: PDF manipulation (merge, split, rotate, extract)
 - **PDF.js**: PDF rendering and page extraction
+- **Mammoth.js**: Word document (.docx) to HTML conversion
+- **html2canvas**: HTML to canvas rendering for PDF export
 - **JSZip**: Creating ZIP archives (loaded dynamically)
 
 ## 📦 Dependencies
@@ -238,6 +327,12 @@ All libraries are loaded from CDN - no installation needed!
 
 <!-- PDF Rendering -->
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+
+<!-- Word Document Processing -->
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+
+<!-- HTML to Canvas -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <!-- JSZip (loaded dynamically when needed) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -338,6 +433,9 @@ Tested and working on:
 ## 💡 Use Cases
 
 ### Personal
+- **Convert Word to PDF**: Share documents in universal format
+- **View Word Docs**: Read .docx files without Microsoft Word
+- **Edit & Mark up**: Highlight important parts, redact personal info
 - Sign documents without printing
 - Create photo albums from vacation pictures
 - Merge scanned documents
@@ -345,8 +443,12 @@ Tested and working on:
 - Rotate incorrectly oriented scans
 - Convert screenshots to PDF
 - Add signatures to forms
+- Annotate recipes and instructions
 
 ### Professional
+- **Word to PDF**: Convert reports, proposals, and contracts
+- **Review Documents**: Highlight changes, add review comments
+- **Redact Confidential**: Black out sensitive business information
 - Electronically sign contracts and agreements
 - Add approval signatures to documents
 - Sign NDAs and legal documents
@@ -356,8 +458,16 @@ Tested and working on:
 - Rotate and fix document orientation
 - Create presentations from images
 - Sign invoices and receipts
+- Add company logos to documents
+- Mark up architectural plans
+- Convert Word resumes to PDF
+- Share documents in non-editable format
 
 ### Student
+- **Convert Assignments**: Turn Word essays into PDF submissions
+- **View Documents**: Read .docx files on any device
+- **Study**: Highlight key points in textbooks
+- **Annotate**: Add notes and drawings to lecture slides
 - Sign permission slips
 - Add name and date to assignments
 - Combine lecture notes
@@ -365,6 +475,8 @@ Tested and working on:
 - Split textbook chapters
 - Extract exam pages
 - Organize research papers
+- Mark up PDF worksheets
+- Convert reports to PDF for submission
 
 ## 🚧 Future Enhancements
 

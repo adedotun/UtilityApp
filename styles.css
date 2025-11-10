@@ -740,9 +740,246 @@ main {
     margin-bottom: 5px;
 }
 
+/* Edit PDF Interface */
+.edit-interface {
+    display: none;
+    grid-template-columns: 350px 1fr;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.edit-interface.visible {
+    display: grid;
+}
+
+.edit-tools {
+    background: var(--bg-color);
+    padding: 20px;
+    border-radius: 12px;
+    height: fit-content;
+}
+
+.edit-tools h3,
+.edit-tools h4 {
+    margin-bottom: 15px;
+    color: var(--text-color);
+}
+
+.tool-settings {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.tool-settings h4 {
+    font-size: 1rem;
+    margin-bottom: 10px;
+}
+
+.setting-group {
+    margin-bottom: 15px;
+}
+
+.setting-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 5px;
+}
+
+.setting-group input[type="color"] {
+    width: 60px;
+    height: 36px;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.setting-group input[type="range"] {
+    width: calc(100% - 60px);
+    margin-right: 10px;
+}
+
+.setting-group input[type="checkbox"] {
+    width: auto;
+    margin-right: 8px;
+}
+
+.setting-group select {
+    width: 100%;
+    padding: 8px;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+.setting-group input[type="number"] {
+    width: 100%;
+    padding: 8px;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+.setting-group input[type="file"] {
+    width: 100%;
+    font-size: 0.875rem;
+}
+
+#opacityValue,
+#editSizeValue {
+    font-weight: 600;
+    color: var(--primary-color);
+    min-width: 40px;
+    display: inline-block;
+}
+
+.edit-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.edit-actions .btn-small {
+    width: 100%;
+}
+
+.pdf-editor-container {
+    background: var(--bg-color);
+    padding: 20px;
+    border-radius: 12px;
+}
+
+.pdf-editor-container h3 {
+    margin-bottom: 15px;
+    color: var(--text-color);
+}
+
+#editCanvasWrapper {
+    position: relative;
+    display: inline-block;
+    box-shadow: var(--shadow-lg);
+    background: white;
+    max-width: 100%;
+    overflow: auto;
+}
+
+#editPdfCanvas,
+#editDrawCanvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+#editDrawCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    cursor: crosshair;
+    pointer-events: all;
+}
+
 .page-selection h3 {
     margin-bottom: 15px;
     color: var(--text-color);
+}
+
+/* Word Document Viewer */
+.word-viewer {
+    display: none;
+    margin-bottom: 30px;
+}
+
+.word-viewer.visible {
+    display: block;
+}
+
+.word-content {
+    background: var(--bg-color);
+    padding: 20px;
+    border-radius: 12px;
+}
+
+.word-document {
+    background: white;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    max-width: 800px;
+    margin: 0 auto;
+    min-height: 400px;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 12pt;
+    line-height: 1.6;
+}
+
+.word-document h1 {
+    font-size: 24pt;
+    margin-bottom: 12pt;
+}
+
+.word-document h2 {
+    font-size: 18pt;
+    margin-bottom: 10pt;
+}
+
+.word-document h3 {
+    font-size: 14pt;
+    margin-bottom: 8pt;
+}
+
+.word-document p {
+    margin-bottom: 12pt;
+}
+
+.word-document ul, .word-document ol {
+    margin-bottom: 12pt;
+    margin-left: 40px;
+}
+
+.word-document li {
+    margin-bottom: 6pt;
+}
+
+.word-document table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 12pt;
+}
+
+.word-document table td,
+.word-document table th {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+.word-document table th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+.word-document img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 12pt 0;
+}
+
+.word-loading {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-light);
+}
+
+.word-error {
+    background: #fee;
+    border: 2px solid var(--danger-color);
+    padding: 20px;
+    border-radius: 8px;
+    color: var(--danger-color);
+    text-align: center;
 }
 
 .page-grid {
@@ -994,6 +1231,18 @@ footer {
 
     #pdfCanvas {
         width: 100%;
+    }
+
+    .edit-interface {
+        grid-template-columns: 1fr;
+    }
+
+    .edit-tools {
+        order: 2;
+    }
+
+    .pdf-editor-container {
+        order: 1;
     }
 }
 

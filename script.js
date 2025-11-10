@@ -23,7 +23,10 @@ const modeButtons = {
     splitPdf: document.getElementById('splitPdfMode'),
     rotatePdf: document.getElementById('rotatePdfMode'),
     extractPages: document.getElementById('extractPagesMode'),
-    signPdf: document.getElementById('signPdfMode')
+    signPdf: document.getElementById('signPdfMode'),
+    editPdf: document.getElementById('editPdfMode'),
+    wordToPdf: document.getElementById('wordToPdfMode'),
+    viewWord: document.getElementById('viewWordMode')
 };
 
 // Control groups
@@ -59,6 +62,26 @@ let pdfDocument = null;
 let annotations = {};  // {pageNum: [annotations]}
 let currentTool = 'draw';
 let pendingAnnotation = null;
+
+// Edit PDF State
+let editInterface = null;
+let editPdfCanvas = null;
+let editPdfCtx = null;
+let editDrawCanvas = null;
+let editDrawCtx = null;
+let editCurrentPage = 1;
+let editPdfDocument = null;
+let editCurrentTool = 'highlight';
+let isEditDrawing = false;
+let editDrawStartX = 0;
+let editDrawStartY = 0;
+let edits = {}; // {pageNum: [edits]}
+let editHistory = []; // for undo
+let uploadedEditImage = null;
+
+// Word Document State
+let wordDocuments = []; // Array of {arrayBuffer, html, name}
+let wordViewer = null;
 
 // Mode configurations
 const modeConfigs = {
@@ -124,6 +147,33 @@ const modeConfigs = {
         buttonText: 'Save Signed PDF',
         description: 'Add signatures, text, and dates to your PDF document with an easy-to-use interface.',
         defaultFileName: 'signed'
+    },
+    editPdf: {
+        accept: 'application/pdf',
+        multiple: false,
+        dropText: 'Drag & drop a PDF file here',
+        fileInfo: 'Select a single PDF file to edit',
+        buttonText: 'Save Edited PDF',
+        description: 'Highlight, redact, draw, add shapes, text, and images to your PDF documents.',
+        defaultFileName: 'edited'
+    },
+    wordToPdf: {
+        accept: '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        multiple: true,
+        dropText: 'Drag & drop Word documents here',
+        fileInfo: 'Select Word documents (.docx)',
+        buttonText: 'Convert to PDF',
+        description: 'Convert Microsoft Word documents (.docx) to PDF format with preserved formatting.',
+        defaultFileName: 'converted-word'
+    },
+    viewWord: {
+        accept: '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        multiple: false,
+        dropText: 'Drag & drop a Word document here',
+        fileInfo: 'Select a Word document (.docx)',
+        buttonText: 'Convert to PDF',
+        description: 'View and convert Microsoft Word documents in your browser.',
+        defaultFileName: 'word-document'
     }
 };
 
@@ -230,7 +280,10 @@ function showModeControls(mode) {
         rotatePdf: ['rotate-pdf'],
         extractPages: ['extract-pages'],
         pdfToImages: ['pdf-to-images'],
-        signPdf: ['sign-pdf']
+        signPdf: ['sign-pdf'],
+        editPdf: ['edit-pdf'],
+        wordToPdf: ['word-to-pdf'],
+        viewWord: ['view-word']
     };
 
     const controls = controlMap[mode] || [];
@@ -250,6 +303,25 @@ function showModeControls(mode) {
     } else {
         signatureInterface.classList.remove('visible');
     }
+
+    // Show/hide edit interface
+    editInterface = editInterface || document.getElementById('editInterface');
+    if (mode === 'editPdf') {
+        editInterface.classList.add('visible');
+        if (!editPdfCanvas) {
+            initializeEditTools();
+        }
+    } else {
+        editInterface.classList.remove('visible');
+    }
+
+    // Show/hide word viewer
+    wordViewer = wordViewer || document.getElementById('wordViewer');
+    if (mode === 'viewWord') {
+        wordViewer.classList.add('visible');
+    } else {
+        wordViewer.classList.remove('visible');
+    }
 }
 
 async function handleFiles(selectedFiles) {
@@ -263,6 +335,8 @@ async function handleFiles(selectedFiles) {
 
     if (currentMode === 'imageToPdf') {
         handleImageFiles(fileArray);
+    } else if (['wordToPdf', 'viewWord'].includes(currentMode)) {
+        await handleWordFiles(fileArray);
     } else {
         handlePdfFiles(fileArray);
     }
@@ -354,6 +428,11 @@ async function handlePdfFiles(fileArray) {
                 // Load PDF for signing
                 if (currentMode === 'signPdf') {
                     await loadPdfForSigning(e.target.result);
+                }
+
+                // Load PDF for editing
+                if (currentMode === 'editPdf') {
+                    await loadPdfForEditing(e.target.result);
                 }
             } catch (error) {
                 console.error('Error loading PDF:', error);
@@ -523,7 +602,10 @@ async function handleAction() {
         splitPdf: splitPdf,
         rotatePdf: rotatePdf,
         extractPages: extractPages,
-        signPdf: saveSignedPdf
+        signPdf: saveSignedPdf,
+        editPdf: saveEditedPdf,
+        wordToPdf: convertWordToPdf,
+        viewWord: convertWordToPdf
     };
 
     const action = actions[currentMode];
@@ -1411,6 +1493,636 @@ async function saveSignedPdf() {
     } catch (error) {
         console.error('Error saving signed PDF:', error);
         alert('❌ An error occurred while saving the signed PDF. Please try again.');
+    } finally {
+        setLoading(false);
+    }
+}
+
+// ===== EDIT PDF FUNCTIONALITY =====
+
+function initializeEditTools() {
+    // Get canvas elements
+    editPdfCanvas = document.getElementById('editPdfCanvas');
+    editPdfCtx = editPdfCanvas.getContext('2d');
+    editDrawCanvas = document.getElementById('editDrawCanvas');
+    editDrawCtx = editDrawCanvas.getContext('2d');
+
+    // Tool buttons
+    const toolButtons = {
+        highlight: document.getElementById('highlightToolBtn'),
+        redact: document.getElementById('redactToolBtn'),
+        draw: document.getElementById('drawToolBtn'),
+        shape: document.getElementById('shapeToolBtn'),
+        text: document.getElementById('textToolBtn'),
+        image: document.getElementById('imageToolBtn'),
+        eraser: document.getElementById('eraserToolBtn')
+    };
+
+    // Settings
+    const editColor = document.getElementById('editColor');
+    const editOpacity = document.getElementById('editOpacity');
+    const opacityValue = document.getElementById('opacityValue');
+    const editSize = document.getElementById('editSize');
+    const editSizeValue = document.getElementById('editSizeValue');
+    const imageUpload = document.getElementById('imageUpload');
+    const addImageBtn = document.getElementById('addImageBtn');
+
+    // Navigation
+    const prevEditPageBtn = document.getElementById('prevEditPageBtn');
+    const nextEditPageBtn = document.getElementById('nextEditPageBtn');
+
+    // Actions
+    const undoEditBtn = document.getElementById('undoEditBtn');
+    const clearPageEditsBtn = document.getElementById('clearPageEditsBtn');
+
+    // Tool switching
+    Object.keys(toolButtons).forEach(tool => {
+        toolButtons[tool].addEventListener('click', () => switchEditTool(tool));
+    });
+
+    // Settings listeners
+    editOpacity.addEventListener('input', (e) => {
+        opacityValue.textContent = e.target.value + '%';
+    });
+
+    editSize.addEventListener('input', (e) => {
+        editSizeValue.textContent = e.target.value;
+    });
+
+    // Drawing events
+    editDrawCanvas.addEventListener('mousedown', startEditDrawing);
+    editDrawCanvas.addEventListener('mousemove', editDraw);
+    editDrawCanvas.addEventListener('mouseup', stopEditDrawing);
+    editDrawCanvas.addEventListener('mouseleave', stopEditDrawing);
+
+    // Touch support
+    editDrawCanvas.addEventListener('touchstart', handleEditTouch);
+    editDrawCanvas.addEventListener('touchmove', handleEditTouch);
+    editDrawCanvas.addEventListener('touchend', stopEditDrawing);
+
+    // Image upload
+    imageUpload.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                uploadedEditImage = e.target.result;
+                alert('Image loaded! Click on the PDF to place it.');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    addImageBtn.addEventListener('click', () => {
+        if (!uploadedEditImage) {
+            alert('Please upload an image first!');
+        }
+    });
+
+    // Navigation
+    prevEditPageBtn.addEventListener('click', () => navigateEditPage(-1));
+    nextEditPageBtn.addEventListener('click', () => navigateEditPage(1));
+
+    // Actions
+    undoEditBtn.addEventListener('click', undoLastEdit);
+    clearPageEditsBtn.addEventListener('click', clearPageEdits);
+}
+
+function switchEditTool(tool) {
+    editCurrentTool = tool;
+
+    // Update active button
+    document.querySelectorAll('#editInterface .tool-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`#editInterface [data-tool="${tool}"]`).classList.add('active');
+
+    // Show/hide relevant settings
+    const shapeTypeGroup = document.getElementById('shapeTypeGroup');
+    const fillGroup = document.getElementById('fillGroup');
+    const textSizeGroup = document.getElementById('textSizeGroup');
+    const imageUploadGroup = document.getElementById('imageUploadGroup');
+    const opacityGroup = document.getElementById('opacityGroup');
+    const sizeGroup = document.getElementById('sizeGroup');
+
+    // Hide all optional groups
+    shapeTypeGroup.style.display = 'none';
+    fillGroup.style.display = 'none';
+    textSizeGroup.style.display = 'none';
+    imageUploadGroup.style.display = 'none';
+
+    // Show relevant groups based on tool
+    if (tool === 'shape') {
+        shapeTypeGroup.style.display = 'block';
+        fillGroup.style.display = 'block';
+    } else if (tool === 'text') {
+        textSizeGroup.style.display = 'block';
+        opacityGroup.style.display = 'none';
+    } else if (tool === 'image') {
+        imageUploadGroup.style.display = 'block';
+        opacityGroup.style.display = 'none';
+        sizeGroup.style.display = 'none';
+    } else if (tool === 'eraser') {
+        opacityGroup.style.display = 'none';
+    }
+
+    editDrawCanvas.style.cursor = 'crosshair';
+}
+
+function startEditDrawing(e) {
+    const rect = editDrawCanvas.getBoundingClientRect();
+    editDrawStartX = e.clientX - rect.left;
+    editDrawStartY = e.clientY - rect.top;
+    isEditDrawing = true;
+
+    if (editCurrentTool === 'draw' || editCurrentTool === 'highlight' || editCurrentTool === 'redact') {
+        editDrawCtx.beginPath();
+        editDrawCtx.moveTo(editDrawStartX, editDrawStartY);
+    } else if (editCurrentTool === 'text') {
+        addEditText(editDrawStartX, editDrawStartY);
+        isEditDrawing = false;
+    } else if (editCurrentTool === 'image' && uploadedEditImage) {
+        addEditImage(editDrawStartX, editDrawStartY);
+        isEditDrawing = false;
+    }
+}
+
+function editDraw(e) {
+    if (!isEditDrawing) return;
+    if (editCurrentTool === 'shape') return;
+
+    const rect = editDrawCanvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const color = document.getElementById('editColor').value;
+    const opacity = parseInt(document.getElementById('editOpacity').value) / 100;
+    const size = parseInt(document.getElementById('editSize').value);
+
+    if (editCurrentTool === 'highlight') {
+        editDrawCtx.globalAlpha = opacity;
+        editDrawCtx.strokeStyle = color;
+        editDrawCtx.lineWidth = size * 3;
+        editDrawCtx.lineCap = 'round';
+        editDrawCtx.lineJoin = 'round';
+        editDrawCtx.lineTo(x, y);
+        editDrawCtx.stroke();
+    } else if (editCurrentTool === 'redact') {
+        editDrawCtx.globalAlpha = 1;
+        editDrawCtx.strokeStyle = '#000000';
+        editDrawCtx.lineWidth = size * 4;
+        editDrawCtx.lineCap = 'square';
+        editDrawCtx.lineJoin = 'miter';
+        editDrawCtx.lineTo(x, y);
+        editDrawCtx.stroke();
+    } else if (editCurrentTool === 'draw') {
+        editDrawCtx.globalAlpha = opacity;
+        editDrawCtx.strokeStyle = color;
+        editDrawCtx.lineWidth = size;
+        editDrawCtx.lineCap = 'round';
+        editDrawCtx.lineJoin = 'round';
+        editDrawCtx.lineTo(x, y);
+        editDrawCtx.stroke();
+    } else if (editCurrentTool === 'eraser') {
+        editDrawCtx.globalCompositeOperation = 'destination-out';
+        editDrawCtx.lineWidth = size * 4;
+        editDrawCtx.lineCap = 'round';
+        editDrawCtx.lineTo(x, y);
+        editDrawCtx.stroke();
+        editDrawCtx.globalCompositeOperation = 'source-over';
+    }
+}
+
+function stopEditDrawing(e) {
+    if (!isEditDrawing) return;
+    isEditDrawing = false;
+
+    if (editCurrentTool === 'shape' && e) {
+        const rect = editDrawCanvas.getBoundingClientRect();
+        const endX = e.clientX - rect.left;
+        const endY = e.clientY - rect.top;
+        drawShape(editDrawStartX, editDrawStartY, endX, endY);
+    }
+
+    saveEditToHistory();
+}
+
+function handleEditTouch(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const mouseEvent = new MouseEvent(
+        e.type === 'touchstart' ? 'mousedown' : e.type === 'touchmove' ? 'mousemove' : 'mouseup',
+        { clientX: touch.clientX, clientY: touch.clientY }
+    );
+    editDrawCanvas.dispatchEvent(mouseEvent);
+}
+
+function drawShape(startX, startY, endX, endY) {
+    const shapeType = document.getElementById('shapeType').value;
+    const color = document.getElementById('editColor').value;
+    const opacity = parseInt(document.getElementById('editOpacity').value) / 100;
+    const size = parseInt(document.getElementById('editSize').value);
+    const fill = document.getElementById('fillShape').checked;
+
+    editDrawCtx.globalAlpha = opacity;
+    editDrawCtx.strokeStyle = color;
+    editDrawCtx.fillStyle = color;
+    editDrawCtx.lineWidth = size;
+
+    const width = endX - startX;
+    const height = endY - startY;
+
+    switch (shapeType) {
+        case 'rectangle':
+            if (fill) {
+                editDrawCtx.fillRect(startX, startY, width, height);
+            } else {
+                editDrawCtx.strokeRect(startX, startY, width, height);
+            }
+            break;
+        case 'circle':
+            const radius = Math.sqrt(width * width + height * height) / 2;
+            const centerX = startX + width / 2;
+            const centerY = startY + height / 2;
+            editDrawCtx.beginPath();
+            editDrawCtx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            if (fill) {
+                editDrawCtx.fill();
+            } else {
+                editDrawCtx.stroke();
+            }
+            break;
+        case 'line':
+            editDrawCtx.beginPath();
+            editDrawCtx.moveTo(startX, startY);
+            editDrawCtx.lineTo(endX, endY);
+            editDrawCtx.stroke();
+            break;
+        case 'arrow':
+            drawArrow(startX, startY, endX, endY);
+            break;
+    }
+
+    editDrawCtx.globalAlpha = 1;
+}
+
+function drawArrow(fromX, fromY, toX, toY) {
+    const headLength = 15;
+    const angle = Math.atan2(toY - fromY, toX - fromX);
+
+    editDrawCtx.beginPath();
+    editDrawCtx.moveTo(fromX, fromY);
+    editDrawCtx.lineTo(toX, toY);
+    editDrawCtx.stroke();
+
+    editDrawCtx.beginPath();
+    editDrawCtx.moveTo(toX, toY);
+    editDrawCtx.lineTo(
+        toX - headLength * Math.cos(angle - Math.PI / 6),
+        toY - headLength * Math.sin(angle - Math.PI / 6)
+    );
+    editDrawCtx.moveTo(toX, toY);
+    editDrawCtx.lineTo(
+        toX - headLength * Math.cos(angle + Math.PI / 6),
+        toY - headLength * Math.sin(angle + Math.PI / 6)
+    );
+    editDrawCtx.stroke();
+}
+
+function addEditText(x, y) {
+    const text = prompt('Enter text:');
+    if (!text) return;
+
+    const fontSize = parseInt(document.getElementById('editTextSize').value);
+    const color = document.getElementById('editColor').value;
+
+    editDrawCtx.font = `bold ${fontSize}px Arial`;
+    editDrawCtx.fillStyle = color;
+    editDrawCtx.globalAlpha = 1;
+    editDrawCtx.fillText(text, x, y);
+
+    saveEditToHistory();
+}
+
+function addEditImage(x, y) {
+    const img = new Image();
+    img.onload = () => {
+        const maxWidth = 200;
+        const scale = maxWidth / img.width;
+        const width = img.width * scale;
+        const height = img.height * scale;
+
+        editDrawCtx.globalAlpha = 1;
+        editDrawCtx.drawImage(img, x, y, width, height);
+        saveEditToHistory();
+    };
+    img.src = uploadedEditImage;
+}
+
+function saveEditToHistory() {
+    const imageData = editDrawCtx.getImageData(0, 0, editDrawCanvas.width, editDrawCanvas.height);
+    
+    if (!edits[editCurrentPage]) {
+        edits[editCurrentPage] = [];
+    }
+    
+    edits[editCurrentPage].push(imageData);
+    editHistory.push({ page: editCurrentPage, data: imageData });
+}
+
+function undoLastEdit() {
+    if (editHistory.length === 0) {
+        alert('Nothing to undo!');
+        return;
+    }
+
+    const lastEdit = editHistory.pop();
+    if (edits[lastEdit.page] && edits[lastEdit.page].length > 0) {
+        edits[lastEdit.page].pop();
+    }
+
+    editDrawCtx.clearRect(0, 0, editDrawCanvas.width, editDrawCanvas.height);
+    if (edits[editCurrentPage] && edits[editCurrentPage].length > 0) {
+        const lastState = edits[editCurrentPage][edits[editCurrentPage].length - 1];
+        editDrawCtx.putImageData(lastState, 0, 0);
+    }
+}
+
+function clearPageEdits() {
+    if (confirm('Clear all edits on this page?')) {
+        editDrawCtx.clearRect(0, 0, editDrawCanvas.width, editDrawCanvas.height);
+        edits[editCurrentPage] = [];
+        
+        editHistory = editHistory.filter(h => h.page !== editCurrentPage);
+    }
+}
+
+async function loadPdfForEditing(arrayBuffer) {
+    if (typeof pdfjsLib === 'undefined') {
+        alert('PDF.js not loaded. Please refresh the page.');
+        return;
+    }
+
+    try {
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        editPdfDocument = await loadingTask.promise;
+        editCurrentPage = 1;
+        edits = {};
+        editHistory = [];
+
+        await renderEditPdfPage(editCurrentPage);
+        updateEditPageNavigation();
+    } catch (error) {
+        console.error('Error loading PDF for editing:', error);
+        alert('Failed to load PDF for editing');
+    }
+}
+
+async function renderEditPdfPage(pageNum) {
+    const page = await editPdfDocument.getPage(pageNum);
+    const scale = 1.5;
+    const viewport = page.getViewport({ scale });
+
+    editPdfCanvas.width = viewport.width;
+    editPdfCanvas.height = viewport.height;
+    editDrawCanvas.width = viewport.width;
+    editDrawCanvas.height = viewport.height;
+
+    await page.render({ canvasContext: editPdfCtx, viewport }).promise;
+
+    editDrawCtx.clearRect(0, 0, editDrawCanvas.width, editDrawCanvas.height);
+    if (edits[pageNum] && edits[pageNum].length > 0) {
+        const lastState = edits[pageNum][edits[pageNum].length - 1];
+        editDrawCtx.putImageData(lastState, 0, 0);
+    }
+}
+
+async function navigateEditPage(direction) {
+    const newPage = editCurrentPage + direction;
+    if (newPage < 1 || newPage > editPdfDocument.numPages) return;
+
+    editCurrentPage = newPage;
+    await renderEditPdfPage(editCurrentPage);
+    updateEditPageNavigation();
+}
+
+function updateEditPageNavigation() {
+    const prevBtn = document.getElementById('prevEditPageBtn');
+    const nextBtn = document.getElementById('nextEditPageBtn');
+    const indicator = document.getElementById('editPageIndicator');
+
+    indicator.textContent = `Page ${editCurrentPage} of ${editPdfDocument.numPages}`;
+    prevBtn.disabled = editCurrentPage === 1;
+    nextBtn.disabled = editCurrentPage === editPdfDocument.numPages;
+}
+
+async function saveEditedPdf() {
+    if (!currentPdfDoc || !editPdfDocument) {
+        alert('Please load a PDF first!');
+        return;
+    }
+
+    if (Object.keys(edits).length === 0) {
+        alert('Please make at least one edit to the PDF');
+        return;
+    }
+
+    setLoading(true);
+
+    try {
+        const { PDFDocument } = PDFLib;
+        const pdfDoc = await PDFDocument.load(files[0].arrayBuffer);
+
+        for (const [pageNum, pageEdits] of Object.entries(edits)) {
+            if (pageEdits.length === 0) continue;
+
+            const pageIndex = parseInt(pageNum) - 1;
+            const page = pdfDoc.getPage(pageIndex);
+            const { width, height } = page.getSize();
+
+            const finalEdit = pageEdits[pageEdits.length - 1];
+            
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = finalEdit.width;
+            tempCanvas.height = finalEdit.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.putImageData(finalEdit, 0, 0);
+
+            const editImageData = tempCanvas.toDataURL('image/png');
+            const editImage = await pdfDoc.embedPng(editImageData);
+
+            page.drawImage(editImage, {
+                x: 0,
+                y: 0,
+                width: width,
+                height: height
+            });
+        }
+
+        const pdfBytes = await pdfDoc.save();
+        const outputName = fileName.value.trim() || 'edited';
+        downloadFile(pdfBytes, `${outputName}.pdf`, 'application/pdf');
+
+        alert('✅ PDF edited successfully!');
+    } catch (error) {
+        console.error('Error saving edited PDF:', error);
+        alert('❌ An error occurred while saving the edited PDF. Please try again.');
+    } finally {
+        setLoading(false);
+    }
+}
+
+// ===== WORD DOCUMENT FUNCTIONALITY =====
+
+async function handleWordFiles(fileArray) {
+    const wordFiles = fileArray.filter(file => 
+        file.name.endsWith('.docx') || file.type.includes('wordprocessingml')
+    );
+
+    if (wordFiles.length === 0) {
+        alert('Please select valid Word documents (.docx files)');
+        return;
+    }
+
+    wordDocuments = [];
+    
+    for (const file of wordFiles) {
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
+            
+            wordDocuments.push({
+                name: file.name,
+                arrayBuffer: arrayBuffer,
+                html: result.value,
+                file: file
+            });
+        } catch (error) {
+            console.error('Error processing Word document:', error);
+            alert(`Failed to process ${file.name}. Make sure it's a valid .docx file.`);
+        }
+    }
+
+    if (wordDocuments.length > 0) {
+        displayWordDocuments();
+        controls.classList.add('visible');
+    }
+}
+
+function displayWordDocuments() {
+    if (currentMode === 'viewWord' && wordDocuments.length > 0) {
+        const wordDocument = document.getElementById('wordDocument');
+        wordDocument.innerHTML = '<div class="word-loading">Loading document...</div>';
+        
+        setTimeout(() => {
+            wordDocument.innerHTML = wordDocuments[0].html;
+        }, 100);
+    }
+
+    // Show file cards for wordToPdf mode
+    if (currentMode === 'wordToPdf') {
+        filesContainer.innerHTML = '';
+        
+        wordDocuments.forEach((doc, index) => {
+            const docCard = document.createElement('div');
+            docCard.className = 'pdf-card';
+            
+            docCard.innerHTML = `
+                <div class="pdf-icon">📘</div>
+                <button class="remove-btn" data-index="${index}">×</button>
+                <div class="pdf-name" title="${doc.name}">${doc.name}</div>
+                <div class="pdf-info">Word Document</div>
+            `;
+            
+            filesContainer.appendChild(docCard);
+        });
+
+        // Add remove listeners
+        document.querySelectorAll('.remove-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const index = parseInt(e.target.dataset.index);
+                wordDocuments.splice(index, 1);
+                if (wordDocuments.length === 0) {
+                    controls.classList.remove('visible');
+                }
+                displayWordDocuments();
+            });
+        });
+    }
+}
+
+async function convertWordToPdf() {
+    if (wordDocuments.length === 0) {
+        alert('Please add at least one Word document first!');
+        return;
+    }
+
+    setLoading(true);
+
+    try {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        let isFirstPage = true;
+
+        for (const doc of wordDocuments) {
+            // Create a temporary container for the Word content
+            const tempContainer = document.createElement('div');
+            tempContainer.style.width = '210mm'; // A4 width
+            tempContainer.style.padding = '20mm';
+            tempContainer.style.fontFamily = 'Times New Roman, serif';
+            tempContainer.style.fontSize = '12pt';
+            tempContainer.style.lineHeight = '1.6';
+            tempContainer.style.position = 'absolute';
+            tempContainer.style.left = '-9999px';
+            tempContainer.style.background = 'white';
+            tempContainer.innerHTML = doc.html;
+            document.body.appendChild(tempContainer);
+
+            try {
+                // Use html2canvas to render the content
+                const canvas = await html2canvas(tempContainer, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    width: tempContainer.scrollWidth,
+                    height: tempContainer.scrollHeight
+                });
+
+                // Calculate how many pages we need
+                const imgWidth = 210; // A4 width in mm
+                const pageHeight = 297; // A4 height in mm
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                // Add first page
+                if (!isFirstPage) {
+                    pdf.addPage();
+                }
+                isFirstPage = false;
+
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                // Add additional pages if content is longer
+                while (heightLeft > 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+            } finally {
+                document.body.removeChild(tempContainer);
+            }
+        }
+
+        const outputName = fileName.value.trim() || 'converted-word';
+        pdf.save(`${outputName}.pdf`);
+
+        alert(`✅ Word document(s) converted to PDF successfully!`);
+    } catch (error) {
+        console.error('Error converting Word to PDF:', error);
+        alert('❌ An error occurred while converting. Please try again.');
     } finally {
         setLoading(false);
     }

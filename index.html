@@ -36,6 +36,15 @@
                 <button class="mode-btn" id="signPdfMode" data-mode="signPdf" title="Sign and annotate PDF">
                     ✍️ Sign PDF
                 </button>
+                <button class="mode-btn" id="editPdfMode" data-mode="editPdf" title="Edit and markup PDF">
+                    ✏️ Edit PDF
+                </button>
+                <button class="mode-btn" id="wordToPdfMode" data-mode="wordToPdf" title="Convert Word to PDF">
+                    📘 Word → PDF
+                </button>
+                <button class="mode-btn" id="viewWordMode" data-mode="viewWord" title="View Word documents">
+                    📖 View Word
+                </button>
             </div>
 
             <div class="mode-description" id="modeDescription">
@@ -71,6 +80,113 @@
                 <h3>Select Pages</h3>
                 <div class="page-grid" id="pageGrid">
                     <!-- Page thumbnails will be displayed here -->
+                </div>
+            </div>
+
+            <!-- Edit PDF Interface -->
+            <div class="edit-interface" id="editInterface">
+                <div class="edit-tools">
+                    <h3>✏️ Editing Tools</h3>
+                    
+                    <div class="tool-buttons">
+                        <button class="tool-btn active" id="highlightToolBtn" data-tool="highlight">
+                            🟨 Highlight
+                        </button>
+                        <button class="tool-btn" id="redactToolBtn" data-tool="redact">
+                            ⬛ Redact
+                        </button>
+                        <button class="tool-btn" id="drawToolBtn" data-tool="draw">
+                            ✏️ Draw
+                        </button>
+                        <button class="tool-btn" id="shapeToolBtn" data-tool="shape">
+                            ◼️ Shapes
+                        </button>
+                        <button class="tool-btn" id="textToolBtn" data-tool="text">
+                            📝 Text Box
+                        </button>
+                        <button class="tool-btn" id="imageToolBtn" data-tool="image">
+                            🖼️ Add Image
+                        </button>
+                        <button class="tool-btn" id="eraserToolBtn" data-tool="eraser">
+                            🧹 Eraser
+                        </button>
+                    </div>
+
+                    <div class="tool-settings" id="toolSettings">
+                        <h4>Tool Settings</h4>
+                        
+                        <div class="setting-group">
+                            <label>Color:</label>
+                            <input type="color" id="editColor" value="#FFFF00">
+                        </div>
+                        
+                        <div class="setting-group" id="opacityGroup">
+                            <label>Opacity:</label>
+                            <input type="range" id="editOpacity" min="0" max="100" value="50" step="5">
+                            <span id="opacityValue">50%</span>
+                        </div>
+                        
+                        <div class="setting-group" id="sizeGroup">
+                            <label>Size:</label>
+                            <input type="range" id="editSize" min="1" max="20" value="5" step="1">
+                            <span id="editSizeValue">5</span>
+                        </div>
+
+                        <div class="setting-group" id="shapeTypeGroup" style="display: none;">
+                            <label>Shape:</label>
+                            <select id="shapeType">
+                                <option value="rectangle">Rectangle</option>
+                                <option value="circle">Circle</option>
+                                <option value="line">Line</option>
+                                <option value="arrow">Arrow</option>
+                            </select>
+                        </div>
+
+                        <div class="setting-group" id="fillGroup" style="display: none;">
+                            <label>
+                                <input type="checkbox" id="fillShape">
+                                Fill Shape
+                            </label>
+                        </div>
+
+                        <div class="setting-group" id="textSizeGroup" style="display: none;">
+                            <label>Font Size:</label>
+                            <input type="number" id="editTextSize" value="16" min="8" max="72">
+                        </div>
+
+                        <div class="setting-group" id="imageUploadGroup" style="display: none;">
+                            <label>Upload Image:</label>
+                            <input type="file" id="imageUpload" accept="image/*">
+                            <button class="btn-small btn-primary" id="addImageBtn" style="margin-top: 10px;">Add to PDF</button>
+                        </div>
+                    </div>
+
+                    <div class="edit-actions">
+                        <button class="btn-small btn-secondary" id="undoEditBtn">↶ Undo</button>
+                        <button class="btn-small btn-secondary" id="clearPageEditsBtn">Clear Page</button>
+                    </div>
+                </div>
+
+                <div class="pdf-editor-container" id="pdfEditorContainer">
+                    <h3>📄 PDF Editor - Draw, highlight, or click to add elements</h3>
+                    <div class="page-navigation">
+                        <button class="nav-btn" id="prevEditPageBtn">← Previous</button>
+                        <span id="editPageIndicator">Page 1 of 1</span>
+                        <button class="nav-btn" id="nextEditPageBtn">Next →</button>
+                    </div>
+                    <div class="canvas-wrapper" id="editCanvasWrapper">
+                        <canvas id="editPdfCanvas"></canvas>
+                        <canvas id="editDrawCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Word Document Viewer -->
+            <div class="word-viewer" id="wordViewer">
+                <div class="word-content" id="wordContent">
+                    <div class="word-document" id="wordDocument">
+                        <!-- Word content will be rendered here -->
+                    </div>
                 </div>
             </div>
 
@@ -235,6 +351,44 @@
                     </div>
                 </div>
 
+                <div class="control-group mode-specific edit-pdf" id="editInstructionsGroup">
+                    <div class="instructions-box">
+                        <p><strong>How to edit:</strong></p>
+                        <ol>
+                            <li>Select a tool (Highlight, Redact, Draw, Shapes, etc.)</li>
+                            <li>Adjust color, opacity, and size as needed</li>
+                            <li>Draw directly on PDF or click to place elements</li>
+                            <li>Use eraser to remove edits</li>
+                            <li>Navigate pages and edit multiple pages</li>
+                            <li>Click "Save Edited PDF" when done</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="control-group mode-specific word-to-pdf" id="wordToPdfGroup">
+                    <div class="instructions-box">
+                        <p><strong>Word to PDF conversion:</strong></p>
+                        <ol>
+                            <li>Add one or more Word documents (.docx files)</li>
+                            <li>Documents will be converted in order</li>
+                            <li>Each document becomes part of the PDF</li>
+                            <li>Click "Convert to PDF" to download</li>
+                        </ol>
+                        <p><small>Note: Formatting may vary slightly from original.</small></p>
+                    </div>
+                </div>
+
+                <div class="control-group mode-specific view-word" id="viewWordGroup">
+                    <div class="instructions-box">
+                        <p><strong>View Word documents:</strong></p>
+                        <ol>
+                            <li>Add a Word document (.docx file)</li>
+                            <li>The document will be displayed below</li>
+                            <li>You can optionally convert it to PDF</li>
+                        </ol>
+                    </div>
+                </div>
+
                 <div class="button-group">
                     <button class="btn btn-secondary" id="clearBtn">Clear All</button>
                     <button class="btn btn-primary" id="actionBtn">
@@ -252,6 +406,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
         // Configure PDF.js worker
         if (typeof pdfjsLib !== 'undefined') {
