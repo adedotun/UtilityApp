@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Utility App - Complete PDF Toolkit</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📄 PDF Utility App</h1>
+            <p class="subtitle">Your complete PDF toolkit - all in one place</p>
+        </header>
+
+        <main>
+            <div class="mode-selector">
+                <button class="mode-btn active" id="imageToPdfMode" data-mode="imageToPdf" title="Convert images to PDF">
+                    📸 Images → PDF
+                </button>
+                <button class="mode-btn" id="mergePdfMode" data-mode="mergePdf" title="Merge multiple PDFs">
+                    📑 Merge PDFs
+                </button>
+                <button class="mode-btn" id="pdfToImagesMode" data-mode="pdfToImages" title="Extract PDF pages as images">
+                    🖼️ PDF → Images
+                </button>
+                <button class="mode-btn" id="splitPdfMode" data-mode="splitPdf" title="Split PDF into pages">
+                    ✂️ Split PDF
+                </button>
+                <button class="mode-btn" id="rotatePdfMode" data-mode="rotatePdf" title="Rotate PDF pages">
+                    🔄 Rotate PDF
+                </button>
+                <button class="mode-btn" id="extractPagesMode" data-mode="extractPages" title="Extract specific pages">
+                    📋 Extract Pages
+                </button>
+                <button class="mode-btn" id="signPdfMode" data-mode="signPdf" title="Sign and annotate PDF">
+                    ✍️ Sign PDF
+                </button>
+            </div>
+
+            <div class="mode-description" id="modeDescription">
+                Convert your images to a single PDF file with customizable page size and orientation.
+            </div>
+
+            <div class="upload-section">
+                <div class="drop-zone" id="dropZone">
+                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <p class="drop-text" id="dropText">Drag & drop images here</p>
+                    <p class="or-text">or</p>
+                    <button class="browse-btn" id="browseBtn">Browse Files</button>
+                    <input type="file" id="fileInput" accept="image/*" multiple hidden>
+                    <p class="file-info" id="fileInfo">Supports JPG, PNG, GIF, WebP</p>
+                </div>
+            </div>
+
+            <div class="files-container" id="filesContainer">
+                <!-- Files/Images will be displayed here -->
+            </div>
+
+            <!-- PDF Info Display (for single PDF modes) -->
+            <div class="pdf-info-display" id="pdfInfoDisplay">
+                <!-- PDF information will be displayed here -->
+            </div>
+
+            <!-- Page Selection UI (for extract/rotate modes) -->
+            <div class="page-selection" id="pageSelection">
+                <h3>Select Pages</h3>
+                <div class="page-grid" id="pageGrid">
+                    <!-- Page thumbnails will be displayed here -->
+                </div>
+            </div>
+
+            <!-- Signature Interface (for sign mode) -->
+            <div class="signature-interface" id="signatureInterface">
+                <div class="signature-tools">
+                    <h3>✍️ Signature Tools</h3>
+                    
+                    <div class="tool-buttons">
+                        <button class="tool-btn active" id="drawSignatureBtn" data-tool="draw">
+                            ✏️ Draw Signature
+                        </button>
+                        <button class="tool-btn" id="addTextBtn" data-tool="text">
+                            📝 Add Text
+                        </button>
+                        <button class="tool-btn" id="addDateBtn" data-tool="date">
+                            📅 Add Date
+                        </button>
+                    </div>
+
+                    <div class="signature-creator" id="signatureCreator">
+                        <h4>Draw Your Signature</h4>
+                        <canvas id="signatureCanvas" width="400" height="150"></canvas>
+                        <div class="canvas-controls">
+                            <button class="btn-small btn-secondary" id="clearCanvasBtn">Clear</button>
+                            <button class="btn-small btn-primary" id="saveSignatureBtn">Save Signature</button>
+                        </div>
+                        <div class="color-picker">
+                            <label>Color:</label>
+                            <input type="color" id="signatureColor" value="#000000">
+                            <label>Size:</label>
+                            <input type="range" id="signatureSize" min="1" max="10" value="3" step="1">
+                            <span id="sizeValue">3</span>
+                        </div>
+                    </div>
+
+                    <div class="text-creator" id="textCreator" style="display: none;">
+                        <h4>Add Text</h4>
+                        <input type="text" id="textInput" placeholder="Enter text here" class="text-input">
+                        <div class="text-controls">
+                            <label>Font Size:</label>
+                            <input type="number" id="fontSize" value="16" min="8" max="72">
+                            <label>Color:</label>
+                            <input type="color" id="textColor" value="#000000">
+                        </div>
+                        <button class="btn-small btn-primary" id="addTextToCanvasBtn">Add to PDF</button>
+                    </div>
+
+                    <div class="date-creator" id="dateCreator" style="display: none;">
+                        <h4>Add Date</h4>
+                        <select id="dateFormat" class="date-format">
+                            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                            <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                            <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                            <option value="full">Full Date</option>
+                        </select>
+                        <div class="date-preview" id="datePreview"></div>
+                        <button class="btn-small btn-primary" id="addDateToCanvasBtn">Add to PDF</button>
+                    </div>
+
+                    <div class="saved-signatures" id="savedSignatures">
+                        <!-- Saved signatures will appear here -->
+                    </div>
+                </div>
+
+                <div class="pdf-canvas-container" id="pdfCanvasContainer">
+                    <h3>📄 PDF Preview - Click to place items</h3>
+                    <div class="page-navigation">
+                        <button class="nav-btn" id="prevPageBtn">← Previous</button>
+                        <span id="pageIndicator">Page 1 of 1</span>
+                        <button class="nav-btn" id="nextPageBtn">Next →</button>
+                    </div>
+                    <div class="canvas-wrapper" id="canvasWrapper">
+                        <canvas id="pdfCanvas"></canvas>
+                        <div class="annotations-layer" id="annotationsLayer">
+                            <!-- Annotations will be placed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls" id="controls">
+                <div class="control-group" id="fileNameGroup">
+                    <label for="fileName">Output Name:</label>
+                    <input type="text" id="fileName" placeholder="my-document" value="converted-images">
+                </div>
+                
+                <div class="control-group mode-specific image-to-pdf" id="pageSizeGroup">
+                    <label for="pageSize">Page Size:</label>
+                    <select id="pageSize">
+                        <option value="a4">A4</option>
+                        <option value="letter">Letter</option>
+                        <option value="fit">Fit to Image</option>
+                    </select>
+                </div>
+
+                <div class="control-group mode-specific image-to-pdf" id="orientationGroup">
+                    <label for="orientation">Orientation:</label>
+                    <select id="orientation">
+                        <option value="auto">Auto</option>
+                        <option value="portrait">Portrait</option>
+                        <option value="landscape">Landscape</option>
+                    </select>
+                </div>
+
+                <div class="control-group mode-specific split-pdf" id="splitModeGroup">
+                    <label for="splitMode">Split Mode:</label>
+                    <select id="splitMode">
+                        <option value="all">All Pages (Individual Files)</option>
+                        <option value="range">Page Ranges</option>
+                        <option value="everyN">Every N Pages</option>
+                    </select>
+                </div>
+
+                <div class="control-group mode-specific split-pdf" id="splitOptionsGroup">
+                    <label for="splitOptions">Options:</label>
+                    <input type="text" id="splitOptions" placeholder="e.g., 1-3,5-7 or 2 (every 2 pages)">
+                    <small class="help-text">For ranges: 1-3,5-7 | For every N: enter number</small>
+                </div>
+
+                <div class="control-group mode-specific rotate-pdf" id="rotationGroup">
+                    <label for="rotationAngle">Rotation Angle:</label>
+                    <select id="rotationAngle">
+                        <option value="90">90° Clockwise</option>
+                        <option value="180">180°</option>
+                        <option value="270">270° (90° Counter-clockwise)</option>
+                    </select>
+                </div>
+
+                <div class="control-group mode-specific rotate-pdf extract-pages" id="applyToGroup">
+                    <label for="applyTo">Apply To:</label>
+                    <select id="applyTo">
+                        <option value="all">All Pages</option>
+                        <option value="selected">Selected Pages</option>
+                    </select>
+                </div>
+
+                <div class="control-group mode-specific pdf-to-images" id="imageFormatGroup">
+                    <label for="imageFormat">Image Format:</label>
+                    <select id="imageFormat">
+                        <option value="png">PNG (High Quality)</option>
+                        <option value="jpeg">JPEG (Smaller Size)</option>
+                    </select>
+                </div>
+
+                <div class="control-group mode-specific pdf-to-images" id="imageQualityGroup">
+                    <label for="imageQuality">JPEG Quality:</label>
+                    <input type="range" id="imageQuality" min="50" max="100" value="92" step="1">
+                    <span id="qualityValue">92</span>
+                </div>
+
+                <div class="control-group mode-specific sign-pdf" id="signInstructionsGroup">
+                    <div class="instructions-box">
+                        <p><strong>How to sign:</strong></p>
+                        <ol>
+                            <li>Draw, add text, or insert date using tools on the left</li>
+                            <li>Click on the PDF preview to place items</li>
+                            <li>Drag items to reposition, click × to remove</li>
+                            <li>Navigate through pages if needed</li>
+                            <li>Click "Save Signed PDF" when done</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-secondary" id="clearBtn">Clear All</button>
+                    <button class="btn btn-primary" id="actionBtn">
+                        <span id="btnText">Convert to PDF</span>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Created with ❤️ • No uploads required - everything runs in your browser • Complete privacy guaranteed</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script>
+        // Configure PDF.js worker
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+        }
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>
