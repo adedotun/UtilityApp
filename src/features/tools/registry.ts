@@ -57,7 +57,7 @@ export const TOOLS: ToolDef[] = [
 
   // Organise — Phase 2 / 3
   { slug: 'merge-pdf', name: 'Merge PDF', category: 'organise', icon: Files, outcome: 'Combine PDFs into one file, in the order you choose.', accept: ['application/pdf'], multiple: true, phase: 2 },
-  { slug: 'split-pdf', name: 'Split PDF', category: 'organise', icon: Scissors, outcome: 'Split a PDF by page, by ranges, or into equal parts.', accept: ['application/pdf'], multiple: false, phase: 2 },
+  { slug: 'split-pdf', name: 'Split PDF', category: 'organise', icon: Scissors, outcome: 'Describe the split in plain words, then drag pages between files to adjust it.', accept: ['application/pdf'], multiple: false, phase: 2 },
   { slug: 'rotate-pdf', name: 'Rotate PDF', category: 'organise', icon: ArrowsClockwise, outcome: 'Rotate pages by 90, 180 or 270 degrees.', accept: ['application/pdf'], multiple: false, phase: 2 },
   { slug: 'extract-pages', name: 'Extract pages', category: 'organise', icon: FilePdf, outcome: 'Pull selected pages out into a new PDF.', accept: ['application/pdf'], multiple: false, phase: 2 },
   { slug: 'reorder-pages', name: 'Reorder pages', category: 'organise', icon: Stack, outcome: 'Drag pages into a new order and save the result.', accept: ['application/pdf'], multiple: false, phase: 3 },

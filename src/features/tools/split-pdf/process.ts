@@ -42,16 +42,37 @@ export function planSplit(mode: SplitMode, pageCount: number, rangesInput: strin
   return groups
 }
 
+/**
+ * Output file name for one group of pages. Contiguous groups keep the
+ * familiar pages-1-3 form; scattered groups list their pages so the name
+ * never claims a range the file does not contain.
+ */
+export function groupFileName(group: number[], index: number): string {
+  const sorted = [...group].sort((a, b) => a - b)
+  if (sorted.length === 1) return `page-${sorted[0]}.pdf`
+  const contiguous = sorted.every((p, i) => i === 0 || p === sorted[i - 1] + 1)
+  if (contiguous) return `pages-${sorted[0]}-${sorted[sorted.length - 1]}.pdf`
+  if (sorted.length <= 8) return `pages-${sorted.join('-')}.pdf`
+  return `selected-pages-${index + 1}.pdf`
+}
+
+/** Splits into one PDF per group of 1-based pages. Pages are saved in document order. */
+export async function splitPdfGroups(buffer: ArrayBuffer, groups: number[][]): Promise<{ name: string; data: Uint8Array }[]> {
+  const clean = groups.filter((g) => g.length > 0).map((g) => [...g].sort((a, b) => a - b))
+  if (clean.length === 0) throw new Error('Put at least one page in a file before splitting.')
+  const src = await PDFDocument.load(new Uint8Array(buffer.slice(0)), { ignoreEncryption: true })
+  const out: { name: string; data: Uint8Array }[] = []
+  for (let i = 0; i < clean.length; i++) {
+    const doc = await PDFDocument.create()
+    const pages = await doc.copyPages(src, clean[i].map((p) => p - 1))
+    pages.forEach((p) => doc.addPage(p))
+    out.push({ name: groupFileName(clean[i], i), data: await doc.save() })
+  }
+  return out
+}
+
 export async function splitPdf(buffer: ArrayBuffer, mode: SplitMode, rangesInput: string, everyN: number): Promise<{ name: string; data: Uint8Array }[]> {
   const src = await PDFDocument.load(new Uint8Array(buffer.slice(0)), { ignoreEncryption: true })
   const groups = planSplit(mode, src.getPageCount(), rangesInput, everyN)
-  const out: { name: string; data: Uint8Array }[] = []
-  for (let i = 0; i < groups.length; i++) {
-    const doc = await PDFDocument.create()
-    const pages = await doc.copyPages(src, groups[i].map((p) => p - 1))
-    pages.forEach((p) => doc.addPage(p))
-    const label = groups[i].length === 1 ? `page-${groups[i][0]}` : `pages-${groups[i][0]}-${groups[i][groups[i].length - 1]}`
-    out.push({ name: `${label}.pdf`, data: await doc.save() })
-  }
-  return out
+  return splitPdfGroups(buffer, groups)
 }

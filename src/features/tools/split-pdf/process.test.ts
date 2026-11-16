@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PDFDocument } from 'pdf-lib'
-import { parsePageRanges, planSplit, splitPdf } from './process'
+import { groupFileName, parsePageRanges, planSplit, splitPdf, splitPdfGroups } from './process'
 import { buf, makePdf } from '../test-fixtures'
 
 describe('parsePageRanges', () => {
@@ -24,5 +24,33 @@ describe('splitPdf', () => {
     const src = await makePdf(6)
     const parts = await splitPdf(buf(src), 'ranges', '1-2, 4-6', 2)
     expect(parts.map((p) => p.name)).toEqual(['pages-1-2.pdf', 'pages-4-6.pdf'])
+  })
+})
+describe('splitPdfGroups', () => {
+  it('splits scattered groups and names them by their pages', async () => {
+    const src = await makePdf(4)
+    const parts = await splitPdfGroups(buf(src), [[1, 3], [2], [4]])
+    expect(parts.map((p) => p.name)).toEqual(['pages-1-3.pdf', 'page-2.pdf', 'page-4.pdf'])
+    const counts = await Promise.all(parts.map(async (p) => (await PDFDocument.load(p.data.slice())).getPageCount()))
+    expect(counts).toEqual([2, 1, 1])
+  })
+  it('sorts pages within a group into document order', async () => {
+    const src = await makePdf(3)
+    const parts = await splitPdfGroups(buf(src), [[3, 1]])
+    expect(parts[0].name).toBe('pages-1-3.pdf')
+  })
+  it('ignores empty groups and rejects an all-empty split', async () => {
+    const src = await makePdf(2)
+    const parts = await splitPdfGroups(buf(src), [[], [1, 2]])
+    expect(parts).toHaveLength(1)
+    await expect(splitPdfGroups(buf(src), [[]])).rejects.toThrow('at least one page')
+  })
+})
+describe('groupFileName', () => {
+  it('names singles, ranges and scattered groups honestly', () => {
+    expect(groupFileName([5], 0)).toBe('page-5.pdf')
+    expect(groupFileName([2, 3, 4], 0)).toBe('pages-2-4.pdf')
+    expect(groupFileName([1, 3, 5], 0)).toBe('pages-1-3-5.pdf')
+    expect(groupFileName([1, 3, 5, 7, 9, 11, 13, 15, 17], 1)).toBe('selected-pages-2.pdf')
   })
 })
