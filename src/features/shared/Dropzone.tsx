@@ -34,7 +34,7 @@ export default function Dropzone({ accept, multiple, onFiles, label }: Props) {
       <UploadSimple size={32} aria-hidden />
       <p className="title-3">Drop files here, or click to browse</p>
       <p className="body-6 text-[var(--color-ink-muted)] dark:text-[var(--color-dark-muted)]">
-        You can also paste a file copied to your clipboard anywhere on this page. Accepts {accept.join(', ')}.
+        You can also paste a file copied to your clipboard anywhere on this page. {accept.includes('*/*') ? 'Accepts any file type.' : `Accepts ${accept.join(', ')}.`}
       </p>
       <input
         ref={inputRef}

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import ToolWorkspace, { fieldClass, labelClass, panelClass } from '../../shared/ToolWorkspace'
+import type { ProcessOutput, WorkspaceFile } from '../../shared/useWorkspace'
 import PageThumbnails from '../../shared/PageThumbnails'
 import { getTool } from '../registry'
 const tool = getTool('rotate-pdf')!
@@ -9,16 +10,20 @@ export default function RotatePdfTool() {
   const [applyTo, setApplyTo] = useState<'all' | 'selected'>('all')
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const toggle = (p: number) => setSelected((prev) => { const n = new Set(prev); if (n.has(p)) n.delete(p); else n.add(p); return n })
+
+  const processOne = async (file: WorkspaceFile, pages: number[]): Promise<ProcessOutput> => {
+    const { rotatePdf } = await import('./process')
+    const data = await rotatePdf(file.buffer!, angle, pages)
+    return { name: 'rotated.pdf', blob: new Blob([data as BlobPart], { type: 'application/pdf' }), summary: `Rotated ${pages.length ? pages.length : file.pageCount} pages by ${angle} degrees` }
+  }
+
   return (
     <ToolWorkspace
       tool={tool}
-      actionLabel={() => 'Rotate PDF'}
-      canRun={(files) => files.length === 1 && !files[0].error && !!files[0].buffer && (applyTo === 'all' || selected.size > 0)}
-      onProcess={async (files) => {
-        const { rotatePdf } = await import('./process')
-        const data = await rotatePdf(files[0].buffer!, angle, applyTo === 'selected' ? [...selected] : [])
-        return [{ name: 'rotated.pdf', blob: new Blob([data as BlobPart], { type: 'application/pdf' }), summary: `Rotated ${applyTo === 'selected' ? selected.size : files[0].pageCount} pages by ${angle} degrees` }]
-      }}
+      actionLabel={(files) => (files.length > 1 ? `Rotate ${files.length} PDFs` : 'Rotate PDF')}
+      canRun={(files) => files.length >= 1 && files.every((f) => !f.error && !!f.buffer) && (applyTo === 'all' ? true : files.length === 1 && selected.size > 0)}
+      onProcess={async (files) => [await processOne(files[0], applyTo === 'selected' ? [...selected] : [])]}
+      batchProcess={(file) => processOne(file, [])}
     >
       {({ files }) => (
         <div className={panelClass}>
@@ -32,7 +37,10 @@ export default function RotatePdfTool() {
                 <option value="all">All pages</option><option value="selected">Selected pages only</option>
               </select></label>
           </div>
-          {applyTo === 'selected' && files[0]?.buffer ? (
+          {files.length > 1 ? (
+            <p className="body-6 text-[var(--color-ink-muted)] dark:text-[var(--color-dark-muted)]">With several PDFs added, the angle is applied to every page of every file in one batch. Rotating selected pages works with a single PDF.</p>
+          ) : null}
+          {applyTo === 'selected' && files.length === 1 && files[0]?.buffer ? (
             <>
               <p className="body-6 text-[var(--color-ink-muted)] dark:text-[var(--color-dark-muted)]">Select pages below. {selected.size} selected. Thumbnails are shown rotated as a preview.</p>
               <PageThumbnails buffer={files[0].buffer} pageCount={files[0].pageCount ?? 0} selected={selected} onToggle={toggle} transformFor={(p) => selected.has(p) ? `rotate(${angle}deg) scale(0.82)` : ''} label="Select pages to rotate" />

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import ToolWorkspace, { fieldClass, labelClass, panelClass } from '../../shared/ToolWorkspace'
+import type { ProcessOutput, WorkspaceFile } from '../../shared/useWorkspace'
 import PageThumbnails from '../../shared/PageThumbnails'
 import { getTool } from '../registry'
 const tool = getTool('page-numbers')!
@@ -8,16 +9,20 @@ export default function PageNumbersTool() {
   const [format, setFormat] = useState<'plain' | 'page' | 'of-total' | 'page-of-total'>('page-of-total')
   const [position, setPosition] = useState<'bottom-center' | 'bottom-left' | 'bottom-right' | 'top-center' | 'top-left' | 'top-right'>('bottom-center')
   const [start, setStart] = useState(1)
+
+  const processOne = async (file: WorkspaceFile): Promise<ProcessOutput> => {
+    const { addPageNumbers } = await import('./process')
+    const data = await addPageNumbers(file.buffer!, format, position, start)
+    return { name: 'numbered.pdf', blob: new Blob([data as BlobPart], { type: 'application/pdf' }), summary: `Page numbers added to ${file.pageCount} pages, starting at ${start}` }
+  }
+
   return (
     <ToolWorkspace
       tool={tool}
-      actionLabel={() => 'Add page numbers'}
-      canRun={(files) => files.length === 1 && !files[0].error && !!files[0].buffer}
-      onProcess={async (files) => {
-        const { addPageNumbers } = await import('./process')
-        const data = await addPageNumbers(files[0].buffer!, format, position, start)
-        return [{ name: 'numbered.pdf', blob: new Blob([data as BlobPart], { type: 'application/pdf' }), summary: `Page numbers added to ${files[0].pageCount} pages, starting at ${start}` }]
-      }}
+      actionLabel={(files) => (files.length > 1 ? `Number ${files.length} PDFs` : 'Add page numbers')}
+      canRun={(files) => files.length >= 1 && files.every((f) => !f.error && !!f.buffer)}
+      onProcess={async (files) => [await processOne(files[0])]}
+      batchProcess={processOne}
     >
       {({ files }) => (
         <div className={panelClass}>
@@ -35,7 +40,11 @@ export default function PageNumbersTool() {
               <input type="number" min={0} value={start} onChange={(e) => setStart(Number(e.target.value))} className={fieldClass} />
             </label>
           </div>
-          <NumberPreview format={format} position={position} start={start} total={files[0]?.pageCount ?? 10} buffer={files[0]?.buffer} />
+          {files.length > 1 ? (
+            <p className="body-6 text-[var(--color-ink-muted)] dark:text-[var(--color-dark-muted)]">Numbering restarts at {start} in each file, and any total in the format is that file&apos;s own page count.</p>
+          ) : (
+            <NumberPreview format={format} position={position} start={start} total={files[0]?.pageCount ?? 10} buffer={files[0]?.buffer} />
+          )}
         </div>
       )}
     </ToolWorkspace>

@@ -52,7 +52,7 @@ export default function Layout() {
 
       <header className="sticky top-3 z-10 mt-3 flex items-center justify-between rounded-2xl bg-white/80 px-4 py-2 shadow-sm backdrop-blur-md transition-colors duration-300 dark:bg-[var(--color-dark-raised)]/85">
         <Link to="/" className="title-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]">
-          PDF Tweaks
+          FileTweaks
         </Link>
         <nav aria-label="Main" className="flex items-center gap-4">
           <NavLink
@@ -82,7 +82,7 @@ export default function Layout() {
       <Toaster />
       <footer className="flex flex-col gap-3 py-8 sm:flex-row sm:items-center sm:justify-between">
         <p className="caption-2 text-[var(--color-ink-muted)] dark:text-[var(--color-dark-muted)]">
-          PDF Tweaks runs entirely in your browser. Your files never leave your device.
+          FileTweaks runs entirely in your browser. Your files never leave your device.
         </p>
         <div className="flex items-center gap-4">
           <Link to="/privacy" className="button-sm rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]">

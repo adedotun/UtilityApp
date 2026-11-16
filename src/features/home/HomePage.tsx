@@ -5,7 +5,7 @@ import { CATEGORY_LABELS, TOOLS, getTool, toolsByCategory, type ToolCategory, ty
 import { Star } from '@phosphor-icons/react'
 import { usePrefs } from '../../app/prefs'
 
-const CATEGORIES: ToolCategory[] = ['convert', 'organise', 'edit-sign', 'optimise', 'security']
+const CATEGORIES: ToolCategory[] = ['convert', 'images', 'documents', 'files', 'organise', 'edit-sign', 'optimise', 'security']
 
 export default function HomePage() {
   const [query, setQuery] = useState('')
@@ -22,11 +22,11 @@ export default function HomePage() {
     <>
       <section className="max-w-[680px]">
         <h1 className="heading-1">
-          PDF tools that never upload your files
+          File tools that never upload your files
         </h1>
         <p className="body-3 mt-4 text-[var(--color-ink-muted)] dark:text-[var(--color-dark-muted)]">
-          Merge, split, convert, sign, edit and compress PDFs and Word documents, entirely in
-          your browser. No sign up, and nothing to install.
+          Merge, split, convert, sign, edit and compress PDFs, images, documents and other
+          files, entirely in your browser. No sign up, and nothing to install.
         </p>
         <p className="caption-2 mt-4 flex items-center gap-2 text-[var(--color-ink-muted)] dark:text-[var(--color-dark-muted)]">
           <ShieldCheck size={20} aria-hidden />
@@ -82,10 +82,10 @@ export default function HomePage() {
         <dl className="mt-6 flex flex-col gap-6">
           {[
             ['Are my files uploaded anywhere?', 'No. Every tool runs in your browser on your device. There is no server in the design that could receive your files, and closing the tab discards everything held in memory.'],
-            ['Do I need an account or to pay?', 'No. PDF Tweaks is free, with no sign up and no daily limits.'],
+            ['Do I need an account or to pay?', 'No. FileTweaks is free, with no sign up and no daily limits.'],
             ['Does it work offline?', 'After the first visit, the app is cached on your device and the tools work without a connection. Large engines such as the PDF renderer are cached the first time you open a tool that needs them.'],
             ['Why does Word to PDF look simpler than my document?', 'The conversion keeps your text and paragraph structure. Complex Word layout, tables, headers and styling do not carry across exactly, and the tool says so before you convert.'],
-            ['Is redact safe for sensitive information?', 'Redact draws a solid box over the page. It does not remove the underlying text layer, so do not rely on it alone for truly sensitive information in a file you share widely. The Edit PDF tool states this plainly too.'],
+            ['Is redact safe for sensitive information?', 'Yes, if you use the Redact PDF tool. It rebuilds each page you mark as an image with your boxes burned in as solid black, so the text underneath is removed from the file entirely and cannot be selected, copied or recovered. The trade-off is that a redacted page becomes an image and loses its whole text layer, including text outside the boxes. The redact tool inside Edit PDF is different: it only draws a box over the page and leaves the underlying text layer in place, and the tool says so. For truly sensitive information, use Redact PDF.'],
             ['What is stored on my device?', 'Only your theme choice, favourite and recent tools, and signatures you choose to save. File contents and processed file names are never stored. Clear local data in the footer removes all of it.'],
           ].map(([q, a]) => (
             <div key={q}>

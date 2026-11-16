@@ -1,2 +1,6 @@
 node_modules
 dist
+# Playwright (Wave 4b): generated fixtures and run artifacts are rebuilt every run
+e2e/.fixtures/
+playwright-report/
+test-results/

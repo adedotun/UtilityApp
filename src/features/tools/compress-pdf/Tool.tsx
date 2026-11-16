@@ -1,52 +1,57 @@
 import { useState } from 'react'
 import ToolWorkspace, { panelClass } from '../../shared/ToolWorkspace'
+import type { ProcessOutput, WorkspaceFile } from '../../shared/useWorkspace'
 import { getTool } from '../registry'
 const tool = getTool('compress-pdf')!
 
 import { formatSize } from '../../../lib/files'
 export default function CompressPdfTool() {
   const [level, setLevel] = useState<'email' | 'balanced' | 'quality'>('balanced')
+
+  const processOne = async (file: WorkspaceFile, signal: AbortSignal, onProgress: (n: number) => void): Promise<ProcessOutput> => {
+    const { compressPdf, buildRasterizedPdf, LEVEL_DPI } = await import('./process')
+    const buffer = file.buffer!
+    let candidate: Uint8Array | undefined
+    try {
+      const { loadPdfJs } = await import('../../../lib/pdfjs')
+      const { dpi, jpegQuality } = LEVEL_DPI[level]
+      const doc = await loadPdfJs(buffer)
+      const pages = []
+      const canvas = document.createElement('canvas')
+      for (let p = 1; p <= doc.numPages; p++) {
+        if (signal.aborted) throw new Error('Cancelled')
+        const page = await doc.getPage(p)
+        const pt = page.getViewport({ scale: 1 })
+        const viewport = page.getViewport({ scale: dpi / 72 })
+        canvas.width = Math.floor(viewport.width); canvas.height = Math.floor(viewport.height)
+        const ctx = canvas.getContext('2d')
+        if (!ctx) throw new Error('Canvas unavailable')
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height)
+        await page.render({ canvas, canvasContext: ctx, viewport }).promise
+        const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/jpeg', jpegQuality))
+        if (!blob) throw new Error('A page could not be rendered.')
+        pages.push({ jpeg: new Uint8Array(await blob.arrayBuffer()), widthPt: pt.width, heightPt: pt.height })
+        onProgress(p / doc.numPages)
+      }
+      candidate = await buildRasterizedPdf(pages)
+    } catch {
+      candidate = undefined
+    }
+    const result = await compressPdf(buffer, candidate)
+    const saved = Math.max(0, Math.round((1 - result.outputSize / result.originalSize) * 100))
+    const summary = result.returnedOriginal
+      ? `This file could not be made smaller at this level, so the original was returned unchanged at ${formatSize(result.originalSize)}`
+      : `Compressed from ${formatSize(result.originalSize)} to ${formatSize(result.outputSize)}, saving ${saved} percent`
+    return { name: 'compressed.pdf', blob: new Blob([result.data as BlobPart], { type: 'application/pdf' }), summary }
+  }
+
   return (
     <ToolWorkspace
       tool={tool}
-      actionLabel={() => 'Compress PDF'}
-      canRun={(files) => files.length === 1 && !files[0].error && !!files[0].buffer}
-      onProcess={async (files, signal, onProgress) => {
-        const { compressPdf, buildRasterizedPdf, LEVEL_DPI } = await import('./process')
-        const buffer = files[0].buffer!
-        let candidate: Uint8Array | undefined
-        try {
-          const { loadPdfJs } = await import('../../../lib/pdfjs')
-          const { dpi, jpegQuality } = LEVEL_DPI[level]
-          const doc = await loadPdfJs(buffer)
-          const pages = []
-          const canvas = document.createElement('canvas')
-          for (let p = 1; p <= doc.numPages; p++) {
-            if (signal.aborted) throw new Error('Cancelled')
-            const page = await doc.getPage(p)
-            const pt = page.getViewport({ scale: 1 })
-            const viewport = page.getViewport({ scale: dpi / 72 })
-            canvas.width = Math.floor(viewport.width); canvas.height = Math.floor(viewport.height)
-            const ctx = canvas.getContext('2d')
-            if (!ctx) throw new Error('Canvas unavailable')
-            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height)
-            await page.render({ canvas, canvasContext: ctx, viewport }).promise
-            const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/jpeg', jpegQuality))
-            if (!blob) throw new Error('A page could not be rendered.')
-            pages.push({ jpeg: new Uint8Array(await blob.arrayBuffer()), widthPt: pt.width, heightPt: pt.height })
-            onProgress(p / doc.numPages)
-          }
-          candidate = await buildRasterizedPdf(pages)
-        } catch {
-          candidate = undefined
-        }
-        const result = await compressPdf(buffer, candidate)
-        const saved = Math.max(0, Math.round((1 - result.outputSize / result.originalSize) * 100))
-        const summary = result.returnedOriginal
-          ? `This file could not be made smaller at this level, so the original was returned unchanged at ${formatSize(result.originalSize)}`
-          : `Compressed from ${formatSize(result.originalSize)} to ${formatSize(result.outputSize)}, saving ${saved} percent`
-        return [{ name: 'compressed.pdf', blob: new Blob([result.data as BlobPart], { type: 'application/pdf' }), summary }]
-      }}
+      actionLabel={(files) => (files.length > 1 ? `Compress ${files.length} PDFs` : 'Compress PDF')}
+      canRun={(files) => files.length >= 1 && files.every((f) => !f.error && !!f.buffer)}
+      onProcess={async (files, signal, onProgress) => [await processOne(files[0], signal, onProgress)]}
+      batchProcess={processOne}
     >
       {({ files }) => (
         <div className={panelClass}>
@@ -64,7 +69,7 @@ export default function CompressPdfTool() {
             ))}
           </fieldset>
           <p className="body-6 text-[var(--color-ink-muted)] dark:text-[var(--color-dark-muted)]">
-            {files[0] ? `Current size: ${formatSize(files[0].file.size)}. ` : ''}Compression re renders pages as images, which is what actually shrinks image heavy PDFs. If the result would be larger than your original, the original is returned instead and you will be told.
+            {files.length > 1 ? `${files.length} files added, ${formatSize(files.reduce((sum, f) => sum + f.file.size, 0))} in total, compressed one by one at this level. ` : files[0] ? `Current size: ${formatSize(files[0].file.size)}. ` : ''}Compression re renders pages as images, which is what actually shrinks image heavy PDFs. If the result would be larger than your original, the original is returned instead and you will be told.
           </p>
         </div>
       )}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { countPages } from '../../lib/pdf'
 import { uid, validateFile } from '../../lib/files'
 import { toast } from '../../lib/toast'
+import { runBatch as runBatchEngine, type BatchSuccess } from './batch'
 
 export interface WorkspaceFile {
   id: string
@@ -15,12 +16,21 @@ export interface WorkspaceFile {
 export interface ProcessOutput { name: string; blob: Blob; summary: string }
 export type JobStatus = 'idle' | 'working' | 'done' | 'error'
 
+/** One row of batch state: every input file, settled or not, in add order. */
+export interface BatchItemState {
+  sourceName: string
+  status: 'waiting' | 'working' | 'done' | 'error'
+  output?: BatchSuccess
+  error?: string
+}
+
 export function useWorkspace(accept: string[], multiple: boolean) {
   const [files, setFiles] = useState<WorkspaceFile[]>([])
   const [status, setStatus] = useState<JobStatus>('idle')
   const [progress, setProgress] = useState(0)
   const [outputs, setOutputs] = useState<ProcessOutput[]>([])
   const [jobError, setJobError] = useState<string | null>(null)
+  const [batchItems, setBatchItems] = useState<BatchItemState[] | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
   const addFiles = useCallback(async (incoming: File[]) => {
@@ -43,6 +53,7 @@ export function useWorkspace(accept: string[], multiple: boolean) {
     }
     setFiles((prev) => (multiple ? [...prev, ...items] : items))
     setOutputs([])
+    setBatchItems(null)
     setStatus('idle')
     setJobError(null)
   }, [accept, multiple])
@@ -56,7 +67,10 @@ export function useWorkspace(accept: string[], multiple: boolean) {
     return () => window.removeEventListener('paste', onPaste)
   }, [addFiles])
 
-  const removeFile = useCallback((id: string) => setFiles((prev) => prev.filter((f) => f.id !== id)), [])
+  const removeFile = useCallback((id: string) => {
+    setFiles((prev) => prev.filter((f) => f.id !== id))
+    setBatchItems(null)
+  }, [])
 
   const moveFile = useCallback((id: string, dir: -1 | 1) => {
     setFiles((prev) => {
@@ -72,12 +86,12 @@ export function useWorkspace(accept: string[], multiple: boolean) {
 
   const reset = useCallback(() => {
     abortRef.current?.abort()
-    setFiles([]); setOutputs([]); setStatus('idle'); setProgress(0); setJobError(null)
+    setFiles([]); setOutputs([]); setBatchItems(null); setStatus('idle'); setProgress(0); setJobError(null)
   }, [])
 
   const cancel = useCallback(() => {
     abortRef.current?.abort()
-    setStatus('idle'); setProgress(0)
+    setStatus('idle'); setProgress(0); setBatchItems(null)
     toast.info('Processing cancelled. Your files were not changed.')
   }, [])
 
@@ -100,5 +114,64 @@ export function useWorkspace(accept: string[], multiple: boolean) {
     }
   }, [files])
 
-  return { files, addFiles, removeFile, moveFile, reset, status, progress, outputs, setOutputs, jobError, run, cancel }
+  /**
+   * Batch run: the same single-file process applied to every added file.
+   * Per-file state is kept in batchItems so the UI can show each file's
+   * progress and, at the end, each result or the reason it failed. A file
+   * that fails never stops the others.
+   */
+  const runBatch = useCallback(async (
+    fn: (file: WorkspaceFile, signal: AbortSignal, onProgress: (n: number) => void) => Promise<ProcessOutput>,
+  ) => {
+    const controller = new AbortController()
+    abortRef.current = controller
+    const total = files.length
+    setStatus('working'); setProgress(0); setJobError(null); setOutputs([])
+    setBatchItems(files.map((f) => ({ sourceName: f.file.name, status: 'waiting' as const })))
+    let current = -1
+    let doneCount = 0
+    try {
+      const outcome = await runBatchEngine(
+        files.map((f) => ({ name: f.file.name, buffer: f.buffer ?? new ArrayBuffer(0) })),
+        async (_buffer, _name) => {
+          current += 1
+          const file = files[current]
+          const index = current
+          setBatchItems((prev) => prev?.map((item, i) => (i === index ? { ...item, status: 'working' } : item)) ?? prev)
+          if (!file.buffer) throw new Error(file.error ?? `${file.file.name} could not be read.`)
+          const out = await fn(file, controller.signal, (frac) => setProgress(Math.min(1, (doneCount + frac) / total)))
+          return { blob: out.blob, filename: out.name, note: out.summary }
+        },
+        {
+          signal: controller.signal,
+          onProgress: (done) => { doneCount = done; setProgress(done / total) },
+          onFileDone: (index, result) => {
+            setBatchItems((prev) => prev?.map((item, i) => {
+              if (i !== index) return item
+              return 'error' in result
+                ? { ...item, status: 'error', error: result.error }
+                : { ...item, status: 'done', output: result }
+            }) ?? prev)
+          },
+        },
+      )
+      if (controller.signal.aborted) return
+      const succeeded = outcome.successes.length
+      if (succeeded === 0) {
+        setStatus('error')
+        setJobError('None of the files could be processed. Each file is listed below with its problem.')
+        toast.error('None of the files could be processed.')
+      } else {
+        setStatus('done'); setProgress(1)
+        if (outcome.failures.length === 0) toast.success(`Done. ${succeeded} files are ready to download.`)
+        else toast.info(`Done. ${succeeded} of ${total} files processed. The others are listed with their problems.`)
+      }
+    } catch {
+      if (controller.signal.aborted) return
+      setStatus('error')
+      setJobError('Something went wrong while processing. Please try again.')
+    }
+  }, [files])
+
+  return { files, addFiles, removeFile, moveFile, reset, status, progress, outputs, setOutputs, jobError, run, cancel, batchItems, runBatch }
 }

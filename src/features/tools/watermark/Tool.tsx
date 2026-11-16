@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import ToolWorkspace, { fieldClass, labelClass, panelClass } from '../../shared/ToolWorkspace'
+import type { ProcessOutput, WorkspaceFile } from '../../shared/useWorkspace'
 import PageThumbnails from '../../shared/PageThumbnails'
 import { getTool } from '../registry'
 const tool = getTool('watermark')!
@@ -10,23 +11,27 @@ export default function WatermarkTool() {
   const [opacity, setOpacity] = useState(30)
   const [position, setPosition] = useState<'center' | 'diagonal' | 'top' | 'bottom'>('diagonal')
   const [imageFile, setImageFile] = useState<File | null>(null)
+
+  const processOne = async (file: WorkspaceFile): Promise<ProcessOutput> => {
+    if (kind === 'text') {
+      const { addTextWatermark } = await import('./process')
+      const data = await addTextWatermark(file.buffer!, text, opacity / 100, position)
+      return { name: 'watermarked.pdf', blob: new Blob([data as BlobPart], { type: 'application/pdf' }), summary: `Text watermark added to ${file.pageCount} pages` }
+    }
+    const { addImageWatermark } = await import('./process')
+    const { toPngBytes, imageKind } = await import('../images-to-pdf/process')
+    const png = imageKind(imageFile!.name, imageFile!.type) === 'png' ? new Uint8Array(await imageFile!.arrayBuffer()) : await toPngBytes(imageFile!)
+    const data = await addImageWatermark(file.buffer!, png, opacity / 100)
+    return { name: 'watermarked.pdf', blob: new Blob([data as BlobPart], { type: 'application/pdf' }), summary: `Image watermark added to ${file.pageCount} pages` }
+  }
+
   return (
     <ToolWorkspace
       tool={tool}
-      actionLabel={() => 'Add watermark'}
-      canRun={(files) => files.length === 1 && !files[0].error && !!files[0].buffer && (kind === 'text' ? text.trim().length > 0 : !!imageFile)}
-      onProcess={async (files) => {
-        if (kind === 'text') {
-          const { addTextWatermark } = await import('./process')
-          const data = await addTextWatermark(files[0].buffer!, text, opacity / 100, position)
-          return [{ name: 'watermarked.pdf', blob: new Blob([data as BlobPart], { type: 'application/pdf' }), summary: `Text watermark added to ${files[0].pageCount} pages` }]
-        }
-        const { addImageWatermark } = await import('./process')
-        const { toPngBytes, imageKind } = await import('../images-to-pdf/process')
-        const png = imageKind(imageFile!.name, imageFile!.type) === 'png' ? new Uint8Array(await imageFile!.arrayBuffer()) : await toPngBytes(imageFile!)
-        const data = await addImageWatermark(files[0].buffer!, png, opacity / 100)
-        return [{ name: 'watermarked.pdf', blob: new Blob([data as BlobPart], { type: 'application/pdf' }), summary: `Image watermark added to ${files[0].pageCount} pages` }]
-      }}
+      actionLabel={(files) => (files.length > 1 ? `Watermark ${files.length} PDFs` : 'Add watermark')}
+      canRun={(files) => files.length >= 1 && files.every((f) => !f.error && !!f.buffer) && (kind === 'text' ? text.trim().length > 0 : !!imageFile)}
+      onProcess={async (files) => [await processOne(files[0])]}
+      batchProcess={processOne}
     >
       {({ files }) => (
         <div className={panelClass}>
@@ -52,7 +57,10 @@ export default function WatermarkTool() {
             <label className={labelClass}><span className="button-sm">Watermark image</span>
               <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} className={fieldClass} /></label>
           )}
-          {files[0]?.buffer ? (
+          {files.length > 1 ? (
+            <p className="body-6 text-[var(--color-ink-muted)] dark:text-[var(--color-dark-muted)]">The same watermark is applied to every page of every PDF in the batch.</p>
+          ) : null}
+          {files.length === 1 && files[0]?.buffer ? (
             <div>
               <p className="body-6 mb-2 text-[var(--color-ink-muted)] dark:text-[var(--color-dark-muted)]">Preview on page 1</p>
               <div className="relative mx-auto max-w-[220px]">

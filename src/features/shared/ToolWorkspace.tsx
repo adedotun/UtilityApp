@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react'
-import { ArrowLeft, DownloadSimple } from '@phosphor-icons/react'
+import { ArrowLeft, DownloadSimple, FileZip } from '@phosphor-icons/react'
 import { Link } from 'react-router-dom'
 import type { ToolDef } from '../tools/registry'
 import { CATEGORY_LABELS } from '../tools/registry'
 import { baseName, downloadBlob, formatSize } from '../../lib/files'
 import Dropzone from './Dropzone'
 import FileList from './FileList'
+import { zipBatchResults } from './batch'
 import { useWorkspace, type ProcessOutput, type WorkspaceFile } from './useWorkspace'
 import { useEffect, useState } from 'react'
 import { usePrefs } from '../../app/prefs'
@@ -22,19 +23,39 @@ interface Props {
   actionLabel: (files: WorkspaceFile[]) => string
   canRun: (files: WorkspaceFile[]) => boolean
   onProcess: (files: WorkspaceFile[], signal: AbortSignal, onProgress: (n: number) => void) => Promise<ProcessOutput[]>
+  /**
+   * Batch mode: process one file with the tool's current options. When the
+   * tool supplies this and more than one file is added, Step 3 runs it over
+   * every file instead of onProcess, with per-file results and a ZIP of all
+   * outputs. With exactly one file, onProcess runs exactly as before.
+   */
+  batchProcess?: (file: WorkspaceFile, signal: AbortSignal, onProgress: (n: number) => void) => Promise<ProcessOutput>
   reorderable?: boolean
   children?: (api: WorkspaceApi) => ReactNode
   notice?: string
 }
 
-export default function ToolWorkspace({ tool, actionLabel, canRun, onProcess, reorderable = false, children, notice }: Props) {
+export default function ToolWorkspace({ tool, actionLabel, canRun, onProcess, batchProcess, reorderable = false, children, notice }: Props) {
   const ws = useWorkspace(tool.accept, tool.multiple)
   const recordRecent = usePrefs((s) => s.recordRecent)
   const [outputName, setOutputName] = useState('')
+  const [zipping, setZipping] = useState(false)
+
+  const batchMode = !!batchProcess && ws.files.length > 1
+  const batchSuccesses = (ws.batchItems ?? []).filter((i) => i.status === 'done' && i.output).map((i) => i.output!)
+  const downloadZip = async () => {
+    setZipping(true)
+    try {
+      const zip = await zipBatchResults(batchSuccesses)
+      downloadBlob(zip, `${tool.slug}-batch.zip`)
+    } finally {
+      setZipping(false)
+    }
+  }
 
   useEffect(() => { recordRecent(tool.slug) }, [tool.slug, recordRecent])
   useEffect(() => {
-    document.title = `${tool.name} — PDF Tweaks`
+    document.title = `${tool.name} — FileTweaks`
     const meta = document.querySelector('meta[name="description"]')
     if (meta) meta.setAttribute('content', `${tool.name}: ${tool.outcome} Free, in your browser, with no uploads.`)
   }, [tool])
@@ -84,7 +105,7 @@ export default function ToolWorkspace({ tool, actionLabel, canRun, onProcess, re
             <button
               type="button"
               disabled={!canRun(ws.files)}
-              onClick={() => void ws.run(onProcess)}
+              onClick={() => void (batchMode ? ws.runBatch(batchProcess!) : ws.run(onProcess))}
               className="button-md self-start rounded-xl bg-[var(--color-accent)] px-3 py-2 text-white outline-none transition-all duration-300 hover:bg-[var(--color-accent-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {actionLabel(ws.files)}
@@ -129,6 +150,42 @@ export default function ToolWorkspace({ tool, actionLabel, canRun, onProcess, re
                   <button type="button" onClick={ws.reset} className="button-md self-start rounded-xl bg-[var(--color-surface-raised)] px-3 py-2 outline-none transition-all duration-300 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] active:scale-[0.98] dark:bg-[var(--color-dark-panel)]">Process another</button>
                 </>
               )}
+            </div>
+          ) : null}
+
+          {ws.batchItems ? (
+            <div className="flex flex-col gap-3 border-t border-[var(--color-line)] pt-4 dark:border-[var(--color-dark-line)]">
+              <p className="button-sm">Batch results · {batchSuccesses.length} of {ws.batchItems.length} files processed</p>
+              <ul className="flex flex-col gap-2">
+                {ws.batchItems.map((item, i) => (
+                  <li key={`${item.sourceName}-${i}`} className="flex flex-wrap items-start justify-between gap-3">
+                    <span className="min-w-0 flex-1">
+                      <span className="body-6 block">
+                        {item.status === 'done' && item.output ? `${item.output.name} · ${formatSize(item.output.blob.size)}` : item.sourceName}
+                      </span>
+                      {item.status === 'done' && item.output?.note ? <span className="caption-2 block text-[var(--color-ink-muted)] dark:text-[var(--color-dark-muted)]">{item.output.note}</span> : null}
+                      {item.status === 'working' ? <span className="caption-2 block text-[var(--color-ink-muted)] dark:text-[var(--color-dark-muted)]">Working…</span> : null}
+                      {item.status === 'waiting' ? <span className="caption-2 block text-[var(--color-ink-muted)] dark:text-[var(--color-dark-muted)]">Waiting</span> : null}
+                      {item.status === 'error' ? <span role="alert" className="caption-2 block text-[var(--color-danger)]">Could not be processed: {item.error}</span> : null}
+                    </span>
+                    {item.status === 'done' && item.output ? (
+                      <button type="button" onClick={() => downloadBlob(item.output!.blob, item.output!.name)} className="button-sm inline-flex items-center gap-2 rounded-lg bg-[var(--color-accent)] px-2 py-2 text-white outline-none transition-all duration-300 hover:bg-[var(--color-accent-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] active:scale-[0.98]">
+                        <DownloadSimple size={14} aria-hidden /> Download
+                      </button>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+              {ws.status !== 'working' ? (
+                <div className="flex flex-wrap gap-3">
+                  {batchSuccesses.length >= 2 ? (
+                    <button type="button" disabled={zipping} onClick={() => void downloadZip()} className="button-md inline-flex items-center gap-2 rounded-xl bg-[var(--color-accent)] px-3 py-2 text-white outline-none transition-all duration-300 hover:bg-[var(--color-accent-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40">
+                      <FileZip size={18} aria-hidden /> {zipping ? 'Building ZIP…' : 'Download all as ZIP'}
+                    </button>
+                  ) : null}
+                  <button type="button" onClick={ws.reset} className="button-md rounded-xl bg-[var(--color-surface-raised)] px-3 py-2 outline-none transition-all duration-300 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] active:scale-[0.98] dark:bg-[var(--color-dark-panel)]">Process another</button>
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>

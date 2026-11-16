@@ -13,6 +13,7 @@ export function fileExtension(name: string): string {
 export function validateFile(file: File, accept: string[]): string | null {
   const ext = fileExtension(file.name)
   const ok = accept.some((a) => {
+    if (a === '*/*') return true
     if (a.startsWith('.')) return ext === a.toLowerCase()
     if (a.endsWith('/*')) return file.type.startsWith(a.slice(0, -1))
     return file.type === a

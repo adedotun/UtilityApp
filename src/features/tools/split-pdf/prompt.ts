@@ -1,7 +1,7 @@
 /**
  * Local, deterministic parser for plain-English split descriptions.
  *
- * This is deliberately NOT an AI call: PDF Tweaks never uploads files, so the
+ * This is deliberately NOT an AI call: FileTweaks never uploads files, so the
  * prompt is understood on the device by the grammar below. It handles page
  * maths (ranges, first/last, rest, odd/even, every N, into N files, split
  * after, except) and content requests ("pages that mention X"), which the

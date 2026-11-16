@@ -4,7 +4,7 @@ export default function PrivacyPage() {
       <h1 className="heading-3">Privacy</h1>
       <div className="body-3 mt-4 flex flex-col gap-4 text-[var(--color-ink-muted)] dark:text-[var(--color-dark-muted)]">
         <p>
-          PDF Tweaks processes every file in your browser, on your device. Files are never
+          FileTweaks processes every file in your browser, on your device. Files are never
           uploaded to a server, because there is no server in the design that could receive
           them.
         </p>
