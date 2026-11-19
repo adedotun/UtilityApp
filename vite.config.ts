@@ -61,7 +61,7 @@ export default defineConfig({
     ocrAssetsPlugin(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.ico', 'favicon-16.png', 'favicon-32.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'FileTweaks — PDF, image, document and file tools',
         short_name: 'FileTweaks',
