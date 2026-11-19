@@ -1,5 +1,6 @@
-import { ArrowDown, ArrowUp, File, X } from '@phosphor-icons/react'
+import { ArrowDown, ArrowUp, X } from '@phosphor-icons/react'
 import { formatSize } from '../../lib/files'
+import FilePreview from './FilePreview'
 import type { WorkspaceFile } from './useWorkspace'
 
 interface Props {
@@ -21,7 +22,7 @@ export default function FileList({ files, reorderable, onRemove, onMove }: Props
     <ul className="flex flex-col divide-y divide-[var(--color-line)] rounded-2xl bg-white dark:divide-[var(--color-dark-line)] dark:bg-[var(--color-dark-raised)]">
       {files.map((f, i) => (
         <li key={f.id} className="flex items-center gap-3 px-4 py-3">
-          <File size={20} aria-hidden className="shrink-0" />
+          <FilePreview entry={f} />
           <div className="min-w-0 flex-1">
             <p className="title-3 truncate">{f.file.name}</p>
             <p className="caption-2 text-[var(--color-ink-muted)] dark:text-[var(--color-dark-muted)]">
