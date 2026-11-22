@@ -1,4 +1,17 @@
+import { useEffect } from 'react'
+
 export default function PrivacyPage() {
+  useEffect(() => {
+    document.title = 'Privacy — FileTweaks'
+    const meta = document.querySelector('meta[name="description"]')
+    if (meta) {
+      meta.setAttribute(
+        'content',
+        'How FileTweaks handles your files: everything is processed in your browser, nothing is uploaded, and there is no analytics or tracking.',
+      )
+    }
+  }, [])
+
   return (
     <section className="max-w-[680px]">
       <h1 className="heading-3">Privacy</h1>
